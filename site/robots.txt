@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://lofi-goroda.ru/sitemap.xml

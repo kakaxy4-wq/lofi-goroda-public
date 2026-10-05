@@ -1,0 +1,10 @@
+[
+  { "name": "day", "q": "d=2026-09-27&t=13:00&wx=clear" },
+  { "name": "night", "q": "d=2026-09-27&t=22:30&wx=clear" },
+  { "name": "bridge-open", "q": "d=2026-09-27&t=01:40&wx=clear" },
+  { "name": "white-nights", "q": "d=2026-06-21&t=00:40&wx=clear" },
+  { "name": "winter-snow", "q": "d=2026-01-20&t=16:10&wx=snow" },
+  { "name": "rain", "q": "d=2026-09-27&t=15:00&wx=rain" },
+  { "name": "zenit-night", "q": "d=2026-10-18&t=21:00&wx=clear" },
+  { "name": "cannon", "q": "d=2026-09-27&t=12:00:03&wx=cloudy" }
+]

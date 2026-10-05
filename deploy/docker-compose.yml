@@ -1,0 +1,54 @@
+# /opt/lofi-goroda/docker-compose.yml — статический сайт за общим Traefik сервера
+services:
+  web:
+    image: nginx:1.27-alpine
+    init: true
+    mem_limit: 64m
+    restart: unless-stopped
+    volumes:
+      - /opt/lofi-goroda/site:/usr/share/nginx/html:ro
+      - /opt/lofi-goroda/music:/usr/share/nginx/music:ro
+      - /opt/lofi-goroda/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks: [traefik]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.lofigoroda.rule=Host(`lofi-goroda.ru`) || Host(`www.lofi-goroda.ru`)
+      - traefik.http.routers.lofigoroda.entrypoints=web-secure
+      - traefik.http.routers.lofigoroda.tls.certresolver=default
+      - traefik.http.routers.lofigoroda.middlewares=lofigoroda-www,compression@file
+      - traefik.http.middlewares.lofigoroda-www.redirectregex.regex=^https://www\.lofi-goroda\.ru/(.*)
+      - traefik.http.middlewares.lofigoroda-www.redirectregex.replacement=https://lofi-goroda.ru/$${1}
+      - traefik.http.middlewares.lofigoroda-www.redirectregex.permanent=true
+      - traefik.http.services.lofigoroda.loadbalancer.server.port=80
+  live:
+    image: python:3.12-alpine
+    init: true
+    mem_limit: 128m
+    restart: unless-stopped
+    # Корневая ФС только на чтение; писать live.py может лишь в два тома ниже (data, feedback) и во временную /tmp.
+    # user: не меняем: папки хоста /opt/lofi-goroda/data и /root/kanban-board/lofi-goroda принадлежат root (0:0, 755),
+    # беклог kanban тоже пишет в feedback.json от root; non-root потребовал бы ручного chown на сервере.
+    read_only: true
+    tmpfs:
+      - /tmp
+    working_dir: /app
+    command: python -u live.py
+    environment:
+      - PORT=8766
+      - DATA=/app/data/live-data.json
+      - FEEDBACK=/app/feedback/feedback.json
+    volumes:
+      - /opt/lofi-goroda/server/live.py:/app/live.py:ro
+      - /opt/lofi-goroda/data:/app/data
+      - /root/kanban-board/lofi-goroda:/app/feedback
+    networks: [traefik]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.lofigoroda-live.rule=(Host(`lofi-goroda.ru`) || Host(`www.lofi-goroda.ru`)) && PathPrefix(`/live`)
+      - traefik.http.routers.lofigoroda-live.entrypoints=web-secure
+      - traefik.http.routers.lofigoroda-live.tls.certresolver=default
+      - traefik.http.routers.lofigoroda-live.priority=100
+      - traefik.http.services.lofigoroda-live.loadbalancer.server.port=8766
+networks:
+  traefik:
+    external: true

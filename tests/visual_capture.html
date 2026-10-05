@@ -1,0 +1,26 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Визуальные эталоны</title>
+<!-- Открыть: /tests/visual_capture.html?prefix=baseline&site=/site/  (нужен приёмник снимков на :8767)
+     Для каждого случая из visual_cases.json открывает сайт в стоп-кадре и сохраняет PNG холста. -->
+<body style="background:#111;color:#ddd;font:14px sans-serif">
+<pre id="log"></pre>
+<iframe id="f" style="width:1280px;height:720px;border:0"></iframe>
+<script type="module">
+const q = new URLSearchParams(location.search);
+const prefix = q.get('prefix') || 'baseline', site = q.get('site') || '/site/';
+const log = (s) => (document.getElementById('log').textContent += s + '\n');
+const cases = await (await fetch('/tests/visual_cases.json', { cache: 'no-store' })).json();
+localStorage.removeItem('lg:lamp'); localStorage.setItem('lg:garland', 'true');
+const f = document.getElementById('f');
+for (const c of cases) {
+  await new Promise((r) => { f.onload = r; f.src = `${site}?${c.q}&freeze&obs`; });
+  await new Promise((r) => setTimeout(r, 3000));
+  const url = f.contentDocument.getElementById('scene').toDataURL('image/png');
+  const res = await fetch(`http://127.0.0.1:8767/${prefix}-${c.name}.png`, { method: 'POST', body: url });
+  log(`${c.name}: ${await res.text()} байт`);
+}
+log('ГОТОВО');
+window.__done = true;
+</script>
+</body>

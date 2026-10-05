@@ -1,0 +1,15 @@
+{
+  "name": "Лофи-города · Петербург",
+  "short_name": "Лофи-города",
+  "description": "Нева из окна мансарды: лофи-эфир, реальная погода и развод мостов.",
+  "lang": "ru",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#140e12",
+  "theme_color": "#140e12",
+  "icons": [
+    { "src": "img/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

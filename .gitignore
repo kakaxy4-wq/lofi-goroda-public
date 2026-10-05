@@ -1,0 +1,10 @@
+music/raw/
+*.log
+.DS_Store
+__pycache__/
+.claude/
+music/dj-trial/
+music/ace-trial/
+music/final/
+site/cities/*/music/*.mp3
+music/pl/
