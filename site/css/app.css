@@ -125,6 +125,8 @@ a.btn { display: inline-block; text-decoration: none; }
 
 .tip { position: fixed; z-index: 4; pointer-events: none; padding: 4px 9px; font-size: 14px; background: var(--panel); transform: translate(-50%, -150%); white-space: nowrap;
   box-shadow: -2px 0 0 0 var(--edge), 2px 0 0 0 var(--edge), 0 -2px 0 0 var(--edge), 0 2px 0 0 var(--edge); }
+.toast-link { color: var(--accent); font-size: 14px; text-decoration: none; border-bottom: 1px dashed currentColor; }
+.toast-link:hover { color: #fff; }
 .toast { position: fixed; z-index: 6; left: 50%; bottom: calc(var(--dock, 90px) + 50px); transform: translateX(-50%); padding: 8px 14px; max-width: calc(100vw - 32px); text-align: center; font-size: 15px; }
 .heart { position: fixed; z-index: 4; pointer-events: none; color: #ff8aa8; font-size: 20px; animation: up 1.6s steps(8) forwards; }
 @keyframes up { to { transform: translateY(-60px); opacity: 0; } }

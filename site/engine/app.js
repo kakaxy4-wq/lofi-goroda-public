@@ -43,6 +43,7 @@ function activeEvent(local) {
 
 const $ = (s) => document.querySelector(s);
 // Контакты автора для «О проекте». Заполняет владелец.
+const DONATE = { href: 'https://boosty.to/lofigoroda/donate', label: 'Угостить автора чаем ☕' }; // неявно: под чаем на столе
 const CONTACTS = 'Автор в Телеграме: <a href="https://t.me/av_vor" target="_blank" rel="noopener">@av_vor</a>. Или через форму выше — отзывы читаем все.';
 const trackEv = (name) => window.__live?.ev(name); // анонимная статистика нажатий (live.js)
 const liveHttp = (path) => (['localhost', '127.0.0.1'].includes(location.hostname) ? `http://${location.hostname}:8766` : '') + path;
@@ -353,7 +354,7 @@ el.addEventListener('pointerup', (e) => {
   if (h.id === 'lamp') { toggleLamp(); return; }
   if (h.id === 'garland') { toggleGarland(); return; }
   if (h.id === 'chair') { room.rockUntil = Date.now() + 12000; audio.sfx('creak'); toast(CITYMOD.toasts?.chair || 'Кресло-качалка поскрипывает.'); return; }
-  if (h.id === 'tea') { audio.sfx('clink'); toast(CITYMOD.toasts?.tea || 'Горячий чай.'); return; }
+  if (h.id === 'tea') { audio.sfx('clink'); toast(CITYMOD.toasts?.tea || 'Горячий чай.', DONATE); return; }
   if (CITYMOD.onHotspot?.(h.id, { toast, env, openGame: (k) => openCoinGame(k, { sfx: audio.sfx, live: window.__live, targets: CITYMOD.places.games }) })) return;
   if (h.id === 'books') { openPanel('places'); return; }
   openPanel('place', h.id);
@@ -375,9 +376,14 @@ function hearts(x, y) {
   }
 }
 let toastT;
-function toast(text) {
+function toast(text, link) { // link: { href, label } — тихая ссылка под текстом (собираем через DOM, без innerHTML)
   const t = $('#toast'); t.textContent = text; t.hidden = false;
-  clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 3500);
+  if (link) {
+    const a = document.createElement('a');
+    a.href = link.href; a.target = '_blank'; a.rel = 'noopener'; a.textContent = link.label; a.className = 'toast-link';
+    t.append(document.createElement('br'), a);
+  }
+  clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), link ? 6000 : 3500);
 }
 
 // ---------- панели ----------
@@ -516,7 +522,7 @@ function openPanel(kind, arg) {
 
       <div class="card"><h3>Поддержать проект</h3>
       <p>Сайт бесплатный и без рекламы. Если окно помогает работать или отдыхать — можно угостить автора чаем: донаты идут на сервер, видеокарту для новой музыки и новые города.</p>
-      <div class="row"><a class="btn primary" href="https://boosty.to/lofigoroda/donate" target="_blank" rel="noopener">Поддержать ☕</a></div></div>
+      <div class="row"><a class="btn primary" href="${DONATE.href}" target="_blank" rel="noopener">Поддержать ☕</a></div></div>
       ${cityChips ? `<div class="card"><h3>Города</h3><div class="chips">${cityChips}</div></div>` : ''}
       <div class="card"><h3>Горячие клавиши</h3><p>Пробел — эфир · L — лампа · G — гирлянда · R — дождь · T — таймер · S — звуки · P — места · W — время · F — экран · H — о проекте · 1–4 — реакции · Esc — закрыть</p></div>
 
