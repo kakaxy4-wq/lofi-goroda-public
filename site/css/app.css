@@ -110,6 +110,7 @@ input[type=range].wide { width: 100%; }
 .btn { border: 0; padding: 6px 12px; background: #3a2c2a; color: var(--ink);
   box-shadow: -2px 0 0 0 var(--edge), 2px 0 0 0 var(--edge), 0 -2px 0 0 var(--edge), 0 2px 0 0 var(--edge), inset 0 -3px 0 0 #00000055; }
 .btn:active { transform: translateY(2px); }
+a.btn { display: inline-block; text-decoration: none; }
 .btn.primary, .chip.on { background: var(--accent); color: var(--accent-ink); box-shadow: -2px 0 0 0 var(--edge), 2px 0 0 0 var(--edge), 0 -2px 0 0 var(--edge), 0 2px 0 0 var(--edge), inset 0 -3px 0 0 #b07820; }
 .chip { border: 0; padding: 4px 10px; background: #3a2c2a; color: var(--ink); font-size: 14px;
   box-shadow: -2px 0 0 0 var(--edge), 2px 0 0 0 var(--edge), 0 -2px 0 0 var(--edge), 0 2px 0 0 var(--edge); }

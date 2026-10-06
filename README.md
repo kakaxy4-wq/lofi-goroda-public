@@ -33,4 +33,4 @@ python tools/devserver.py 8765
 
 Проект не связан с упомянутыми организациями, стадионами и клубами; названия принадлежат их правообладателям.
 
-Автор — [@av_vor](https://t.me/av_vor).
+Автор — [@av_vor](https://t.me/av_vor). Поддержать проект: [boosty.to/lofigoroda](https://boosty.to/lofigoroda/donate) ☕

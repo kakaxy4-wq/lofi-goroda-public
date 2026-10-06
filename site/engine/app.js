@@ -44,6 +44,7 @@ function activeEvent(local) {
 const $ = (s) => document.querySelector(s);
 // Контакты автора для «О проекте». Заполняет владелец.
 const CONTACTS = 'Автор в Телеграме: <a href="https://t.me/av_vor" target="_blank" rel="noopener">@av_vor</a>. Или через форму выше — отзывы читаем все.';
+const trackEv = (name) => window.__live?.ev(name); // анонимная статистика нажатий (live.js)
 const liveHttp = (path) => (['localhost', '127.0.0.1'].includes(location.hostname) ? `http://${location.hostname}:8766` : '') + path;
 const params = new URLSearchParams(location.search);
 const store = {
@@ -163,6 +164,11 @@ function frame(now) {
   env.lampOn = room.lamp ?? lampAuto(env.sun);
   scene.render(env);
   $('#qLamp').classList.toggle('on', env.lampOn);
+}
+// ?record — покадровая отрисовка для промо-роликов: кадр на любой момент времени, без requestAnimationFrame
+if (params.has('record')) {
+  window.__lofiNow = nowMs;
+  window.__lofiFrame = (ms) => { const e = buildEnv(ms); e.lampOn = room.lamp ?? lampAuto(e.sun); scene.render(e); return el; };
 }
 
 // ---------- эфир ----------
@@ -338,9 +344,10 @@ el.addEventListener('pointerup', (e) => {
   const [x, y] = toScene(e.clientX, e.clientY);
   ensureAudioSync(); audio.ctx.resume();
   const sec = secretAt(x, y, env, SECRETS);
-  if (sec) { findSecret(sec); return; }
+  if (sec) { trackEv('secret:' + sec.id); findSecret(sec); return; }
   const h = hotspotAt(x, y);
   if (!h) return;
+  trackEv('spot:' + h.id);
   if (h.id === 'cat') { catPetAt = nowMs() / 1000; audio.sfx('purr'); hearts(e.clientX, e.clientY); toast(CITYMOD.toasts?.cat || 'Кот мурчит.'); return; }
   if (h.id === 'player') { togglePlay(); return; }
   if (h.id === 'lamp') { toggleLamp(); return; }
@@ -502,10 +509,14 @@ function openPanel(kind, arg) {
     $('#timerStop').onclick = () => { stopTimer(); $('#timerBig').textContent = '--:--'; };
   } else if (kind === 'about') {
     $('#panelTitle').textContent = 'О проекте';
-    const cities = ['Москва', 'Казань', 'Владивосток', 'Мурманск', 'Калининград', 'Нижний Новгород', 'Екатеринбург', 'Сочи', 'Иркутск и Байкал', 'Транссиб'];
+    const cities = ['Москва', 'Выборг', 'Псков', 'Кострома', 'Томск', 'Пермь', 'Новосибирск', 'Байкал', 'Тобольск', 'Транссиб']; // кандидаты: городов из списка на сайте пока нет
     const cityChips = CITIES.filter((c) => c.enabled).map((c) => `<a class="chip ${c.id === CITY.id ? 'on' : ''}" href="/${c.id}/">${c.name}</a>`).join('');
     body.innerHTML = `<div class="card">${CITYMOD.about || ''}
       <p>Для стрима добавьте к адресу <b>?obs</b>.</p></div>
+
+      <div class="card"><h3>Поддержать проект</h3>
+      <p>Сайт бесплатный и без рекламы. Если окно помогает работать или отдыхать — можно угостить автора чаем: донаты идут на сервер, видеокарту для новой музыки и новые города.</p>
+      <div class="row"><a class="btn primary" href="https://boosty.to/lofigoroda/donate" target="_blank" rel="noopener">Поддержать ☕</a></div></div>
       ${cityChips ? `<div class="card"><h3>Города</h3><div class="chips">${cityChips}</div></div>` : ''}
       <div class="card"><h3>Горячие клавиши</h3><p>Пробел — эфир · L — лампа · G — гирлянда · R — дождь · T — таймер · S — звуки · P — места · W — время · F — экран · H — о проекте · 1–4 — реакции · Esc — закрыть</p></div>
 
@@ -537,6 +548,7 @@ function openPanel(kind, arg) {
         const r = await fetch(liveHttp('/live/feedback'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, text, contact, city: CITY.id }) });
         const j = await r.json();
         msgEl.textContent = j.ok ? 'Спасибо! Записали.' : (j.error || 'Не получилось, попробуйте позже');
+        if (j.ok) trackEv('feedback:' + kind);
         return j.ok;
       } catch { msgEl.textContent = 'Нет связи с сервером, попробуйте позже'; return false; }
     };
@@ -612,6 +624,27 @@ const live = connectLive({
   onReact: floatReaction,
 });
 window.__live = live;
+// Анонимная статистика нажатий: какие кнопки жмут (без IP и без привязки к человеку) — см. /privacy/
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('button, a');
+  if (!b) return;
+  const d = b.dataset;
+  const name = b.closest('.city-menu') && b.tagName === 'A' ? 'city:' + (b.getAttribute('href') || '').replace(/\//g, '')
+    : b.classList.contains('city-pick') ? 'citymenu'
+    : d.panel ? 'btn:' + d.panel
+    : d.react ? 'react:' + d.react
+    : d.act ? 'act:' + d.act
+    : d.game ? 'game:' + d.game
+    : d.try ? 'try:' + d.try
+    : d.open ? 'open:' + d.open
+    : d.kind ? 'fbkind:' + d.kind
+    : d.city ? 'vote'
+    : d.pet !== undefined ? 'pet'
+    : b.id ? 'btn:' + b.id
+    : b.tagName === 'A' ? 'link:' + (b.hostname === location.hostname ? b.pathname.replace(/\//g, '') || 'home' : b.hostname)
+    : 'btn:' + (d.icon || 'other');
+  trackEv(name);
+}, true);
 let lastReact = 0;
 document.querySelectorAll('[data-react]').forEach((b) => (b.onclick = () => {
   if (Date.now() - lastReact < 700) return;

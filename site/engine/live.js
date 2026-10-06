@@ -14,12 +14,25 @@ function clientId() {
   } catch { return String(Math.random()).slice(2); }
 }
 
+// Метка источника из ссылки (?from=pablik1): запоминаем последнюю, чтобы она пережила переход между городами.
+function source() {
+  const v = (new URLSearchParams(location.search).get('from') || '').toLowerCase();
+  try {
+    if (/^[a-z0-9_-]{1,32}$/.test(v)) localStorage.setItem('lg:from', v);
+    return localStorage.getItem('lg:from') || '';
+  } catch { return /^[a-z0-9_-]{1,32}$/.test(v) ? v : ''; }
+}
+
 export function connectLive({ city, onStats, onReact }) {
   let ws = null, tries = 0, alive = true;
   const last = { stats: null };
+  const queue = []; // события до открытия соединения
   function open() {
     try { ws = new WebSocket(url()); } catch { return retry(); }
-    ws.onopen = () => { tries = 0; ws.send(JSON.stringify({ t: 'hello', id: clientId(), city })); };
+    ws.onopen = () => {
+      tries = 0; ws.send(JSON.stringify({ t: 'hello', id: clientId(), city, from: source() }));
+      while (queue.length) ws.send(JSON.stringify({ t: 'ev', e: queue.shift() }));
+    };
     ws.onmessage = (e) => {
       let m; try { m = JSON.parse(e.data); } catch { return; }
       if (m.t === 'stats') { last.stats = m; onStats(m); }
@@ -39,6 +52,13 @@ export function connectLive({ city, onStats, onReact }) {
   return {
     react: (k) => send({ t: 'react', k }),
     coin: (target, win) => send({ t: 'coin', target, win }),
+    // анонимная статистика нажатий: только имя события, сервер считает их по дням и городам
+    ev(name) {
+      const e = String(name).toLowerCase().replace(/[^a-z0-9_:.-]/g, '').slice(0, 40);
+      if (!e) return;
+      if (ws?.readyState === 1) ws.send(JSON.stringify({ t: 'ev', e }));
+      else if (queue.length < 30) queue.push(e);
+    },
     get stats() { return last.stats; },
     close() { alive = false; ws?.close(); },
   };
