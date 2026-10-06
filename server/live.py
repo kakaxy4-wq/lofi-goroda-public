@@ -7,6 +7,8 @@
   клиент → {"t":"hello","id":"<uuid>","city":"piter"}   (id фиксируется первым hello; повтор меняет только город)
   клиент → {"t":"react","k":"heart|note|star|moon"}
   клиент → {"t":"coin","target":"chizhik|zayats","win":true|false}
+  клиент → {"t":"ev","e":"btn:play"}   (анонимная статистика нажатий: только счётчики по дням и городам, без IP)
+  hello может нести "from":"<метка источника из ?from=>" — считаем уникальных посетителей по источникам
   сервер → {"t":"stats","here":N,"city":N,"today":N,"coins":{...}}
   сервер → {"t":"react","k":"heart"}
 """
@@ -35,6 +37,14 @@ DATA = os.environ.get('DATA', 'live-data.json')
 MAX_CONN = int(os.environ.get('MAX_CONN', '5000'))
 MAX_PER_IP = int(os.environ.get('MAX_PER_IP', '40'))  # за одним IP бывают сотни людей мобильного оператора
 MAX_IDS = int(os.environ.get('MAX_IDS', '200000'))  # потолок множества уникальных id за день
+STATS = os.environ.get('STATS', os.path.join(os.path.dirname(DATA) or '.', 'live-stats.json'))  # история по дням
+STATS_DAYS = 400
+EV_NAME = re.compile(r'^[a-z0-9_:.-]{1,40}$')
+CITY_ID = re.compile(r'^[a-z]{2,20}$')
+SRC_ID = re.compile(r'^[a-z0-9_-]{1,32}$')
+EV_PER_SOCKET = 500   # больше событий с одного соединения не считаем — защита от накрутки
+EV_KEYS_PER_CITY = 300
+SRC_KEYS = 200
 MSG_WINDOW, MSG_LIMIT = 10.0, int(os.environ.get('MSG_LIMIT', '40'))  # не больше 40 кадров за 10 с
 COIN_INTERVAL = 1.0
 MAX_WBUF = 64 * 1024  # клиент не читает — закрываем
@@ -45,7 +55,7 @@ LOCAL_ORIGIN = re.compile(r'^http://(localhost|127\.0\.0\.1)(:\d{1,5})?$')
 PRIVATE_NETS = [ipaddress.ip_network(n) for n in ('127.0.0.0/8', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16')]
 
 clients = {}  # writer -> {'city', 'id', 'ip', 'last_react', 'last_coin', 'win', 'cnt'}
-state = {'day': '', 'ids': set(), 'coins': {}}
+state = {'day': '', 'ids': set(), 'coins': {}, 'ev': {}, 'cu': {}, 'src': {}}  # ev: город→событие→n, cu: город→id, src: метка→id
 
 
 def today():
@@ -57,18 +67,53 @@ def load():
         with open(DATA, encoding='utf-8') as f:
             d = json.load(f)
         if d.get('day') == today():
-            state.update(day=d['day'], ids=set(list(d.get('ids', []))[:MAX_IDS]), coins=d.get('coins', {}))
+            state.update(day=d['day'], ids=set(list(d.get('ids', []))[:MAX_IDS]), coins=d.get('coins', {}),
+                         ev=d.get('ev', {}), cu={k: set(v) for k, v in d.get('cu', {}).items()},
+                         src={k: set(v) for k, v in d.get('src', {}).items()})
+        elif d.get('day'):
+            archive_day(d.get('day'), d.get('ev', {}), {k: set(v) for k, v in d.get('cu', {}).items()},
+                        {k: set(v) for k, v in d.get('src', {}).items()})
     except (OSError, ValueError):
         pass
     if state['day'] != today():
-        state.update(day=today(), ids=set(), coins={})
+        state.update(day=today(), ids=set(), coins={}, ev={}, cu={}, src={})
 
 
 def save():
     tmp = DATA + '.tmp'
     with open(tmp, 'w', encoding='utf-8') as f:
-        json.dump({'day': state['day'], 'ids': list(state['ids']), 'coins': state['coins']}, f)
+        json.dump({'day': state['day'], 'ids': list(state['ids']), 'coins': state['coins'], 'ev': state['ev'],
+                   'cu': {k: list(v) for k, v in state['cu'].items()},
+                   'src': {k: list(v) for k, v in state['src'].items()}}, f)
     os.replace(tmp, DATA)
+
+
+def archive_day(day, ev, cu, src):
+    """Итоги дня — в историю: только числа (события, уникальные посетители по городам и источникам), без id и IP."""
+    if not day or not (ev or cu or src):
+        return
+    try:
+        with open(STATS, encoding='utf-8') as f:
+            hist = json.load(f)
+    except (OSError, ValueError):
+        hist = {}
+    cities = {c: dict(ev.get(c, {})) for c in set(ev) | set(cu)}
+    for c in cities:
+        cities[c]['users'] = len(cu.get(c, ()))
+    hist[day] = {'cities': cities, 'from': {k: len(v) for k, v in src.items()},
+                 'users': len(set().union(*cu.values())) if cu else 0}
+    for old in sorted(hist)[:-STATS_DAYS]:
+        del hist[old]
+    tmp = STATS + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump(hist, f, ensure_ascii=False, sort_keys=True)
+    os.replace(tmp, STATS)
+
+
+def count_ev(city, name, n=1):
+    box = state['ev'].setdefault(city, {})
+    if name in box or len(box) < EV_KEYS_PER_CITY:
+        box[name] = box.get(name, 0) + n
 
 
 def safe_save():
@@ -236,7 +281,11 @@ def add_id(cid):
 
 
 def new_day():
-    state.update(day=today(), ids=set(), coins={})
+    try:
+        archive_day(state['day'], state['ev'], state['cu'], state['src'])
+    except Exception as e:
+        print(f'archive failed: {e!r}', flush=True)
+    state.update(day=today(), ids=set(), coins={}, ev={}, cu={}, src={})
     for c in clients.values():  # те, кто слушает через полночь, — тоже слушатели нового дня
         if c['id']:
             add_id(c['id'])
@@ -301,7 +350,7 @@ async def handle(reader, writer):
     writer.write(('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n'
                   f'Sec-WebSocket-Accept: {accept}\r\n\r\n').encode())
     clients[writer] = {'city': 'piter', 'id': None, 'ip': ip, 'last_react': 0.0, 'last_coin': 0.0,
-                       'win': time.monotonic(), 'cnt': 0}
+                       'win': time.monotonic(), 'cnt': 0, 'evn': 0}
     try:
         while True:
             op, data = await asyncio.wait_for(read_frame(reader), 90)
@@ -330,12 +379,27 @@ async def handle(reader, writer):
                 continue
             t = msg.get('t')
             if t == 'hello':
-                c['city'] = str(msg.get('city', 'piter'))[:20]
+                city = str(msg.get('city', 'piter'))[:20]
+                c['city'] = city if CITY_ID.match(city) else 'other'
                 cid = str(msg.get('id', ''))[:40]
                 if cid and c['id'] is None:  # один id на сокет: повторный hello id не меняет
                     c['id'] = cid
                     add_id(cid)
+                    count_ev(c['city'], 'open')
+                    users = state['cu'].setdefault(c['city'], set())
+                    if len(users) < MAX_IDS:
+                        users.add(cid)
+                    src = str(msg.get('from', '') or '').lower()[:32]
+                    if src and SRC_ID.match(src) and (src in state['src'] or len(state['src']) < SRC_KEYS):
+                        bucket = state['src'].setdefault(src, set())
+                        if len(bucket) < MAX_IDS:
+                            bucket.add(cid)
                 send(writer, stats_for(c['city']))
+            elif t == 'ev':
+                name = str(msg.get('e', ''))[:40]
+                if c['id'] and EV_NAME.match(name) and c['evn'] < EV_PER_SOCKET:
+                    c['evn'] += 1
+                    count_ev(c['city'], name)
             elif t == 'react' and msg.get('k') in REACTIONS:
                 if now - c['last_react'] < 0.7:
                     continue
