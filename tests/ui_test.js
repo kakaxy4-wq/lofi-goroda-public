@@ -119,9 +119,10 @@ export async function run() {
   $('#fbText').value = 'Тест UI: хочу Казань'; $('#fbSend').click(); await sleep(900);
   t('форма обратной связи отправляется', $('#fbMsg').textContent.startsWith('Спасибо'), $('#fbMsg').textContent);
   const hadVote = ls('voted');
-  document.querySelector('[data-city="Казань"]').click(); await sleep(900);
+  const voteBtn = document.querySelector('[data-city]'), voteCity = voteBtn.dataset.city; // первый кандидат — список меняется
+  voteBtn.click(); await sleep(900);
   if (hadVote) t('повторный голос не принимается', $('#toast').textContent.includes('уже проголосовали'), $('#toast').textContent);
-  else t('голос за город принимается', ls('voted') === '"Казань"', ls('voted'));
+  else t('голос за город принимается', ls('voted') === JSON.stringify(voteCity), ls('voted'));
   $('#panelClose').click();
   // тап по спящему экрану только будит интерфейс
   const panelWas = $('#panel').hidden;
