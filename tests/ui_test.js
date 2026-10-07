@@ -46,10 +46,23 @@ export async function run() {
   const v = visibleRows();
   t('гирлянда (верх сцены) в кадре', v.top <= 2, v.top.toFixed(1));
   t('стол и лампа по высоте в кадре', v.bottom >= 242, v.bottom.toFixed(1));
-  t('шпиль Петропавловки по ширине в кадре', v.left <= 299 && v.right >= 299, `${v.left.toFixed(0)}–${v.right.toFixed(0)}`);
+  t(`главное место («${landmark[2]}») по ширине в кадре`, v.left <= landmark[0] && v.right >= landmark[0], `${v.left.toFixed(0)}–${v.right.toFixed(0)} / x=${landmark[0]}`);
   const lampVisible = v.left <= 122 && v.right >= 122;
   t('кнопка плей не меньше 40px (палец)', $('#play').getBoundingClientRect().width >= 40);
   await document.fonts.ready; t('шрифты Pangolin и Press Start загружены', [...document.fonts].some((f) => f.family.includes('Lofi') && f.status === 'loaded') && [...document.fonts].some((f) => f.family.includes('Retro') && f.status === 'loaded'));
+  { // «поделиться окном»: панель с картинкой кадра 1200×630 и ссылками с меткой ?from=share
+    const sb = $('#shareBtn'), sr = sb?.getBoundingClientRect();
+    t('кнопка «поделиться» видна', sb && sr.width > 0 && sr.right <= innerWidth + 1, JSON.stringify(sr));
+    const savedCanShare = navigator.canShare; navigator.canShare = undefined; // в тесте без системного меню
+    sb.click(); await sleep(1200);
+    navigator.canShare = savedCanShare;
+    const img = $('#panelBody .share-preview'), tg = $('#panelBody [data-share="tg"]');
+    if (img && !img.complete) await new Promise((r) => (img.onload = r));
+    t('поделиться: панель с картинкой кадра', !$('#panel').hidden && $('#panel').dataset.kind === 'share' && img?.src.startsWith('data:image/png'));
+    t('поделиться: картинка 1200×630', img?.naturalWidth === 1200 && img?.naturalHeight === 630, `${img?.naturalWidth}×${img?.naturalHeight}`);
+    t('поделиться: ссылка Telegram с меткой from=share', tg && decodeURIComponent(tg.href).includes('from=share'), tg?.href);
+    $('#panelClose').click(); await sleep(50);
+  }
   { // выбор города: кнопка у названия открывает список всех городов, текущий отмечен, Esc закрывает
     const pick = $('.city-pick'), menu = $('.city-menu');
     if (pick && menu) {

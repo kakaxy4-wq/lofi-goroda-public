@@ -141,13 +141,23 @@ const el = $('#scene');
 const scene = createScene(el, CITYMOD);
 // Сцена стоит над полкой управления. Масштаб — «заполнить», но так, чтобы строки 0…244
 // (гирлянда и стол) всегда были видны; лишняя ширина — шторы по бокам.
-let pan = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pan')) || 0.66;
+// На узком экране окно шире телефона: по умолчанию в центр ставим главное место города
+// (центр зоны первого места из PLACE_ORDER или CITY.focusX), а сдвиг пальцем запоминаем для каждого города.
+const FOCUS_X = CITY.focusX ?? (() => {
+  const { HOTSPOTS: hs = [], PLACE_ORDER: order = [] } = CITYMOD.places;
+  const h = order.map((id) => hs.find((x) => x.id === id)).find(Boolean);
+  return h ? h.rects[0][0] + h.rects[0][2] / 2 : W / 2;
+})();
+let pan = 0.5, userPan = store.get(`pan:${CITY.id}`, null), panExtra = 0;
 function layout() {
   const dockH = document.querySelector('.dock').offsetHeight;
   document.documentElement.style.setProperty('--dock', dockH + 'px');
   const bw = innerWidth, bh = Math.max(120, innerHeight - dockH);
   const s = Math.min(Math.max(bw / W, bh / H), bh / 244);
   const w = W * s, h = H * s;
+  panExtra = w - bw;
+  if (userPan == null && panExtra > 0) pan = Math.min(1, Math.max(0, (FOCUS_X * s - bw / 2) / panExtra));
+  else if (userPan != null) pan = userPan;
   el.style.width = w + 'px'; el.style.height = h + 'px';
   el.style.left = (w > bw ? -(w - bw) * pan : (bw - w) / 2) + 'px';
   el.style.top = (h > bh ? 0 : (bh - h) / 2) + 'px';
@@ -336,11 +346,12 @@ el.addEventListener('pointermove', (e) => {
   const dx = e.clientX - drag.x;
   if (Math.abs(dx) > 6) drag.moved = true;
   const extra = el.getBoundingClientRect().width - innerWidth;
-  if (extra > 0) { pan = Math.min(1, Math.max(0, drag.pan - dx / extra)); layout(); }
+  if (extra > 0) { userPan = Math.min(1, Math.max(0, drag.pan - dx / extra)); layout(); }
 });
 el.addEventListener('pointerup', (e) => {
   if (drag && drag.id !== e.pointerId) return;
   const wasDrag = drag?.moved, wasIdle = drag?.wasIdle; drag = null;
+  if (wasDrag && userPan != null) { store.set(`pan:${CITY.id}`, userPan); store.set('panHint', true); }
   if (wasDrag || wasIdle) return;
   const [x, y] = toScene(e.clientX, e.clientY);
   ensureAudioSync(); audio.ctx.resume();
@@ -513,6 +524,20 @@ function openPanel(kind, arg) {
     body.querySelectorAll('[data-focus]').forEach((b) => (b.onclick = async () => { await ensureAudio(); if (!audio.playing) togglePlay(); const [w, r] = b.dataset.focus.split(',').map(Number); startFocus(w, r); }));
     body.querySelectorAll('[data-sleep]').forEach((b) => (b.onclick = async () => { await ensureAudio(); if (!audio.playing) togglePlay(); startSleep(+b.dataset.sleep); }));
     $('#timerStop').onclick = () => { stopTimer(); $('#timerBig').textContent = '--:--'; };
+  } else if (kind === 'share') {
+    const { png, url, text } = arg;
+    $('#panelTitle').textContent = 'Поделиться окном';
+    const q = encodeURIComponent;
+    body.innerHTML = `<div class="card"><img class="share-preview" src="${png}" alt="Кадр окна: ${CITY.name}">
+      <div class="share-row">
+        <a class="btn primary" data-share="tg" href="https://t.me/share/url?url=${q(url)}&text=${q(text)}" target="_blank" rel="noopener">Telegram</a>
+        <a class="btn" data-share="vk" href="https://vk.com/share.php?url=${q(url)}&title=${q(text)}" target="_blank" rel="noopener">ВКонтакте</a>
+        <a class="btn" data-share="download" href="${png}" download="lofi-${CITY.id}.png">Скачать картинку</a>
+        <button class="btn" data-share="copy" id="shareCopy">Скопировать ссылку</button>
+      </div><p class="label">Картинку можно приложить к посту — в ней время и погода прямо сейчас.</p></div>`;
+    $('#shareCopy').onclick = async () => {
+      try { await navigator.clipboard.writeText(url); toast('Ссылка скопирована'); } catch { toast(url); }
+    };
   } else if (kind === 'about') {
     $('#panelTitle').textContent = 'О проекте';
     const cities = ['Москва', 'Выборг', 'Псков', 'Кострома', 'Томск', 'Пермь', 'Новосибирск', 'Байкал', 'Тобольск', 'Транссиб']; // кандидаты: городов из списка на сайте пока нет
@@ -524,7 +549,7 @@ function openPanel(kind, arg) {
       <p>Сайт бесплатный и без рекламы. Если окно помогает работать или отдыхать — можно угостить автора чаем: донаты идут на сервер, видеокарту для новой музыки и новые города.</p>
       <div class="row"><a class="btn primary" href="${DONATE.href}" target="_blank" rel="noopener">Поддержать ☕</a></div></div>
       ${cityChips ? `<div class="card"><h3>Города</h3><div class="chips">${cityChips}</div></div>` : ''}
-      <div class="card"><h3>Горячие клавиши</h3><p>Пробел — эфир · L — лампа · G — гирлянда · R — дождь · T — таймер · S — звуки · P — места · W — время · F — экран · H — о проекте · 1–4 — реакции · Esc — закрыть</p></div>
+      <div class="card"><h3>Горячие клавиши</h3><p>Пробел — эфир · L — лампа · G — гирлянда · R — дождь · T — таймер · S — звуки · P — места · W — время · F — экран · H — о проекте · X — поделиться окном · 1–4 — реакции · Esc — закрыть</p></div>
 
       <div class="card"><h3>Какой город следующий?</h3>
       <div class="chips" id="cityVote">${cities.map((c) => `<button class="chip" data-city="${c}">${c}</button>`).join('')}</div></div>
@@ -602,7 +627,51 @@ function openPanel(kind, arg) {
 
 $('#fs').onclick = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.());
 
+// ---------- поделиться окном ----------
+// Картинка 1200×630 из текущего кадра (пиксели без размытия) с подписью: город, время, погода, адрес.
+async function shareImage() {
+  scene.render(env);
+  const c = document.createElement('canvas'); c.width = 1200; c.height = 630;
+  const g = c.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  g.drawImage(el, 0, 0, W, 252, 0, 0, 1200, 630);
+  const grad = g.createLinearGradient(0, 430, 0, 630);
+  grad.addColorStop(0, 'rgba(20,14,18,0)'); grad.addColorStop(1, 'rgba(20,14,18,0.92)');
+  g.fillStyle = grad; g.fillRect(0, 430, 1200, 200);
+  try { await document.fonts.load('64px Lofi', CITY.name); } catch {}
+  g.fillStyle = '#f3e6c8'; g.shadowColor = 'rgba(0,0,0,0.8)'; g.shadowOffsetX = g.shadowOffsetY = 3;
+  g.font = '64px Lofi, sans-serif'; g.fillText(CITY.name, 48, 548);
+  g.font = '32px Lofi, sans-serif';
+  const temp = Math.round(weather.temp);
+  g.fillText(`${hhmm(cityClock(nowMs()))} · ${temp > 0 ? '+' : ''}${temp}° ${WEATHER_WORDS[weather.kind]} · lofi-goroda.ru`, 50, 596);
+  return c;
+}
+async function shareWindow() {
+  trackEv('share:open');
+  const url = `https://lofi-goroda.ru/${CITY.id === 'piter' ? '' : CITY.id + '/'}?from=share`;
+  const temp = Math.round(weather.temp);
+  const text = `Сейчас в окне ${CITY.name}: ${hhmm(cityClock(nowMs()))}, ${temp > 0 ? '+' : ''}${temp}° ${WEATHER_WORDS[weather.kind]}. Лофи-радио с живым окном в город:`;
+  const c = await shareImage();
+  // на телефоне — системное меню «Поделиться» с картинкой; на компьютере — своя панель
+  if (matchMedia('(pointer: coarse)').matches && navigator.canShare) {
+    const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
+    const file = new File([blob], `lofi-${CITY.id}.png`, { type: 'image/png' });
+    if (navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], text: `${text} ${url}` }); trackEv('share:native'); } catch {}
+      return;
+    }
+  }
+  openPanel('share', { png: c.toDataURL('image/png'), url, text });
+}
+$('#shareBtn').onclick = shareWindow;
+
 // ---------- старт ----------
+setTimeout(() => {
+  if (store.get('panHint', false) || !matchMedia('(pointer: coarse)').matches || panExtra < innerWidth * 0.25) return;
+  if (!$('#toast').hidden || !panel.hidden) return;
+  store.set('panHint', true);
+  toast('Проведите пальцем по окну ← → — за краями ещё полгорода.');
+}, 6000);
 refreshWeather().then(() => { updateHud(); rotateTicker(); });
 setInterval(refreshWeather, 10 * 60e3);
 updateHud();
@@ -643,6 +712,7 @@ document.addEventListener('click', (e) => {
     : d.game ? 'game:' + d.game
     : d.try ? 'try:' + d.try
     : d.open ? 'open:' + d.open
+    : d.share ? 'share:' + d.share
     : d.kind ? 'fbkind:' + d.kind
     : d.city ? 'vote'
     : d.pet !== undefined ? 'pet'

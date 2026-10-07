@@ -15,6 +15,7 @@ const I = {
   heart: ['.........', '.XX...XX.', 'XXXX.XXXX', 'XXXXXXXXX', 'XXXXXXXXX', '.XXXXXXX.', '..XXXXX..', '...XXX...', '....X....'],
   star: ['....X....', '....X....', '...XXX...', 'XXXXXXXXX', '.XXXXXXX.', '..XXXXX..', '..XX.XX..', '.XX...XX.', '.X.....X.'],
   moon: ['...XXX...', '..XX.....', '.XX......', '.XX......', '.XX......', '.XX......', '..XX.....', '...XXX...', '.........'],
+  share: ['....X....', '...XXX...', '..X.X.X..', '....X....', '....X....', 'X...X...X', 'X.......X', 'X.......X', 'XXXXXXXXX'],
   city: ['....X....', '....X....', '...XXX...', '.X.XXX.X.', '.X.X.X.X.', 'XXXXXXXXX', 'X.X.X.X.X', 'XXXXXXXXX', '.........'],
 };
 
