@@ -1,7 +1,7 @@
 // Офлайн: оболочка сайта из кэша, сеть — в приоритете. Музыку не кэшируем (Range-запросы),
 // без сети эфир сам переходит на генеративные вставки.
-const CACHE = 'lg-v13'; // поднимать с каждым релизом; HTML, JSON и скрипты — network-first (сеть в приоритете, кэш только офлайн)
-const SHELL = ['/', 'index.html', 'piter/index.html', 'css/app.css', 'fonts/pangolin-cyr.woff2', 'fonts/pangolin-lat.woff2', 'fonts/handjet-cyr.woff2', 'fonts/handjet-lat.woff2', 'fonts/pressstart-cyr.woff2', 'fonts/pressstart-lat.woff2', 'manifest.webmanifest', 'cities/index.json',
+const CACHE = 'lg-v14'; // поднимать с каждым релизом; HTML, JSON и скрипты — network-first (сеть в приоритете, кэш только офлайн)
+const SHELL = ['/', 'index.html', 'piter/index.html', 'css/app.css', 'fonts/caveat-cyr.woff2', 'fonts/caveat-lat.woff2', 'fonts/pangolin-cyr.woff2', 'fonts/pangolin-lat.woff2', 'fonts/handjet-cyr.woff2', 'fonts/handjet-lat.woff2', 'fonts/pressstart-cyr.woff2', 'fonts/pressstart-lat.woff2', 'manifest.webmanifest', 'cities/index.json',
   'engine/boot.js', 'engine/app.js', 'engine/scene.js', 'engine/const.js', 'engine/audio.js', 'engine/astro.js', 'engine/weather.js', 'engine/util.js',
   'engine/games.js', 'engine/icons.js', 'engine/live.js',
   'cities/piter/index.js', 'cities/piter/config.js', 'cities/piter/skyline.js', 'cities/piter/sounds.js', 'cities/piter/places.js',

@@ -50,6 +50,8 @@ export async function run() {
   const lampVisible = v.left <= 122 && v.right >= 122;
   t('кнопка плей не меньше 40px (палец)', $('#play').getBoundingClientRect().width >= 40);
   await document.fonts.ready; t('шрифты Pangolin и Press Start загружены', [...document.fonts].some((f) => f.family.includes('Lofi') && f.status === 'loaded') && [...document.fonts].some((f) => f.family.includes('Retro') && f.status === 'loaded'));
+  t('название города — шрифт Caveat загружен', [...document.fonts].some((f) => f.family.includes('Title') && f.status === 'loaded'));
+  { const hr = $('h1 .city-pick, h1').getBoundingClientRect(); t('название города целиком на экране', hr.left >= 0 && hr.right <= innerWidth + 1, `${hr.left.toFixed(0)}–${hr.right.toFixed(0)} / ${innerWidth}`); }
   { // «поделиться окном»: панель с картинкой кадра 1200×630 и ссылками с меткой ?from=share
     const sb = $('#shareBtn'), sr = sb?.getBoundingClientRect();
     t('кнопка «поделиться» видна', sb && sr.width > 0 && sr.right <= innerWidth + 1, JSON.stringify(sr));

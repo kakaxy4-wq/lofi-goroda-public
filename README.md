@@ -29,7 +29,7 @@ python tools/devserver.py 8765
 ## Лицензии
 
 - Код — [MIT](LICENSE).
-- Шрифты Pangolin, Handjet, Press Start 2P — SIL Open Font License 1.1 (`site/fonts/OFL.txt`).
+- Шрифты Pangolin, Caveat, Handjet, Press Start 2P — SIL Open Font License 1.1 (`site/fonts/OFL.txt`).
 
 Проект не связан с упомянутыми организациями, стадионами и клубами; названия принадлежат их правообладателям.
 

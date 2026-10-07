@@ -1,3 +1,4 @@
+Caveat: Copyright 2014 The Caveat Project Authors (https://github.com/googlefonts/caveat)
 Шрифты, используемые на lofi-goroda.ru (Pangolin, Handjet, Press Start 2P),
 распространяются по SIL Open Font License, Version 1.1. Ниже — авторские права
 из метаданных файлов шрифтов и полный текст лицензии (оригинал на английском).

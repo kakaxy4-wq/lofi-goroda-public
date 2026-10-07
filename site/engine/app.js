@@ -303,6 +303,7 @@ setInterval(rotateTicker, 9000);
 
 function updateHud() {
   $('#clock').textContent = hhmm(cityClock(nowMs())); // не зависит от кадров: в фоне rAF спит
+  document.body.classList.toggle('night', sunPosition(nowMs(), CITY.lat, CITY.lon).alt < -2); // свечение названия города
   const temp = Math.round(weather.temp);
   $('#wx').textContent = `${temp > 0 ? '+' : ''}${temp}° ${WEATHER_WORDS[weather.kind]}`;
 }
@@ -566,7 +567,7 @@ function openPanel(kind, arg) {
       <div class="card"><h3>Права и лицензии</h3>
       <p>© 2026 Лофи-города. Иллюстрации, код и звуковой движок — оригинальная работа проекта, все права защищены. Пиксельные сцены нарисованы кодом.</p>
       <p>Музыка эфира сгенерирована нейросетью <a href="https://github.com/ace-step/ACE-Step-1.5" target="_blank" rel="noopener">ACE-Step 1.5</a> (лицензия MIT) по заказу автора; живые вставки между треками сочиняет браузер в реальном времени.</p>
-      <p>Шрифты Pangolin, Handjet и Press Start 2P — SIL Open Font License 1.1, <a href="/fonts/OFL.txt" target="_blank" rel="noopener">текст лицензии и авторские права</a>.</p>
+      <p>Шрифты Pangolin, Caveat, Handjet и Press Start 2P — SIL Open Font License 1.1, <a href="/fonts/OFL.txt" target="_blank" rel="noopener">текст лицензии и авторские права</a>.</p>
       <p>Погода: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a>, данные по лицензии CC BY 4.0.</p>
       <p>Звуки города синтезируются кодом, записи не используются. Факты о местах — из открытых источников.</p>
       <p>Проект не связан с упомянутыми организациями, стадионами и клубами; названия принадлежат их правообладателям.</p>
@@ -638,9 +639,12 @@ async function shareImage() {
   const grad = g.createLinearGradient(0, 430, 0, 630);
   grad.addColorStop(0, 'rgba(20,14,18,0)'); grad.addColorStop(1, 'rgba(20,14,18,0.92)');
   g.fillStyle = grad; g.fillRect(0, 430, 1200, 200);
-  try { await document.fonts.load('64px Lofi', CITY.name); } catch {}
-  g.fillStyle = '#f3e6c8'; g.shadowColor = 'rgba(0,0,0,0.8)'; g.shadowOffsetX = g.shadowOffsetY = 3;
-  g.font = '64px Lofi, sans-serif'; g.fillText(CITY.name, 48, 548);
+  try { await Promise.all([document.fonts.load('700 80px Title', CITY.name), document.fonts.load('32px Lofi', '0123')]); } catch {}
+  const night = document.body.classList.contains('night');
+  g.font = '700 80px Title, Lofi, sans-serif';
+  if (night) { g.fillStyle = '#ffe2b0'; g.shadowColor = '#ffb84d'; g.shadowBlur = 18; g.fillText(CITY.name, 48, 552); }
+  g.shadowBlur = 0; g.shadowColor = 'rgba(0,0,0,0.8)'; g.shadowOffsetX = g.shadowOffsetY = 3;
+  g.fillStyle = night ? '#ffe2b0' : '#f3e6c8'; g.fillText(CITY.name, 48, 552); g.fillStyle = '#f3e6c8';
   g.font = '32px Lofi, sans-serif';
   const temp = Math.round(weather.temp);
   g.fillText(`${hhmm(cityClock(nowMs()))} · ${temp > 0 ? '+' : ''}${temp}° ${WEATHER_WORDS[weather.kind]} · lofi-goroda.ru`, 50, 596);
