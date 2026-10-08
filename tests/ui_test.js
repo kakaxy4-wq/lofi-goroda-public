@@ -20,6 +20,8 @@ function tapScene(x, y) {
 }
 const ls = (k) => { try { return localStorage.getItem('lg:' + k); } catch { return null; } };
 
+const audio_playing = () => $('#play').getAttribute('aria-label') === 'Пауза';
+
 export async function run() {
   const out = [];
   const t = (name, ok, info = '') => out.push([name, !!ok, ok ? '' : String(info)]);
@@ -52,6 +54,14 @@ export async function run() {
   await document.fonts.ready; t('шрифты Pangolin и Press Start загружены', [...document.fonts].some((f) => f.family.includes('Lofi') && f.status === 'loaded') && [...document.fonts].some((f) => f.family.includes('Retro') && f.status === 'loaded'));
   t('название города — шрифт Caveat загружен', [...document.fonts].some((f) => f.family.includes('Title') && f.status === 'loaded'));
   { const hr = $('h1 .city-pick, h1').getBoundingClientRect(); t('название города целиком на экране', hr.left >= 0 && hr.right <= innerWidth + 1, `${hr.left.toFixed(0)}–${hr.right.toFixed(0)} / ${innerWidth}`); }
+  { // ▶ при выключенной музыке сам возвращает звук
+    const wasPlaying = audio_playing();
+    if (wasPlaying) { $('#play').click(); await sleep(150); }
+    $('#volMusic').value = 0; $('#volMusic').dispatchEvent(new Event('input'));
+    $('#play').click(); await sleep(250);
+    t('▶ при выключенной музыке включает звук', +$('#volMusic').value > 0 && $('#muteMusic').getAttribute('aria-pressed') === 'false', $('#volMusic').value);
+    if (!wasPlaying) { $('#play').click(); await sleep(150); }
+  }
   { // «поделиться окном»: панель с картинкой кадра 1200×630 и ссылками с меткой ?from=share
     const sb = $('#shareBtn'), sr = sb?.getBoundingClientRect();
     t('кнопка «поделиться» видна', sb && sr.width > 0 && sr.right <= innerWidth + 1, JSON.stringify(sr));

@@ -92,7 +92,42 @@ export function createAudio(sounds = {}) {
   const brownBuf = (() => { const b = ctx.createBuffer(1, ctx.sampleRate * 4, ctx.sampleRate); const d = b.getChannelData(0); let l = 0; for (let i = 0; i < d.length; i++) { l = (l + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = l * 3.5; } return b; })();
   const crackleBuf = (() => { const b = ctx.createBuffer(1, ctx.sampleRate * 7.2, ctx.sampleRate); const d = b.getChannelData(0); for (let i = 0; i < d.length; i++) { d[i] = (Math.random() * 2 - 1) * 0.02; if (Math.random() < 0.0004) d[i] = (Math.random() < 0.5 ? -1 : 1) * (0.3 + Math.random() * 0.7); } return b; })();
   const irBuf = (() => { const len = ctx.sampleRate * 2.4, b = ctx.createBuffer(2, len, ctx.sampleRate); for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6); } return b; })();
-  const loop = (buf) => { const s = ctx.createBufferSource(); s.buffer = buf; s.loop = true; s.start(); return s; };
+  const loop = (buf) => { const s = ctx.createBufferSource(); s.buffer = buf; s.loop = true; s.start(0, Math.random() * buf.duration); return s; };
+  // Подложки города — длинные стерео-буферы с разным шумом в каналах: короткая петля в 3–4 с слышна ухом, а моно звучит «в голове»
+  const stereoNoise = (sec, brown) => {
+    const len = ctx.sampleRate * sec | 0, b = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); let l = 0; for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; if (brown) { l = (l + 0.02 * w) / 1.02; d[i] = l * 3.5; } else d[i] = w; } }
+    return b;
+  };
+  const bedNoise = stereoNoise(13), bedBrown = stereoNoise(17, true);
+  const rainBuf = (() => { // шелест + отдельные капли разной силы
+    const len = ctx.sampleRate * 11 | 0, b = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) {
+      const d = b.getChannelData(c);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * 0.55;
+      for (let k = 0; k < len / 900; k++) { const at = Math.random() * (len - 400) | 0, a = 0.3 + Math.random() * 0.9, dec = 40 + Math.random() * 160; for (let i = 0; i < 400; i++) d[at + i] += a * Math.exp(-i / dec) * (Math.random() * 2 - 1); }
+    }
+    return b;
+  })();
+  // Отзвук: улица (длинный, с поздними отражениями от домов и воды) и комната (короткий)
+  const space = (sec, curve, pre) => {
+    const len = ctx.sampleRate * sec | 0, p0 = ctx.sampleRate * pre | 0, b = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); for (let i = p0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - (i - p0) / (len - p0), curve); }
+    return b;
+  };
+  const cityVerb = ctx.createConvolver(); cityVerb.buffer = space(3.4, 3.4, 0.03);
+  const roomVerb = ctx.createConvolver(); roomVerb.buffer = space(0.7, 4.5, 0.004);
+  { const g = ctx.createGain(); g.gain.value = 0.55; cityVerb.connect(g).connect(cityBus); }
+  { const g = ctx.createGain(); g.gain.value = 0.5; roomVerb.connect(g).connect(cityBus); }
+  // Звук «где-то там»: своя точка в стерео и, для дальних, мягкий спад верхов. Узлы отсоединяются сами
+  function place(dest, pan, cut = 0, ttl = 4) {
+    const p = ctx.createStereoPanner(); p.pan.value = pan; p.connect(dest);
+    let head = p;
+    if (cut) { const f = ctx.createBiquadFilter(); f.frequency.value = cut; f.connect(p); head = f; }
+    setTimeout(() => { try { head.disconnect(); p.disconnect(); } catch {} }, (ttl + 1) * 1000);
+    return head;
+  }
+  const side = (w = 0.8) => (Math.random() * 2 - 1) * w;
 
   const reverb = ctx.createConvolver(); reverb.buffer = irBuf;
   const revOut = ctx.createGain(); revOut.gain.value = 0.28; reverb.connect(revOut).connect(musicBus);
@@ -288,21 +323,26 @@ export function createAudio(sounds = {}) {
     const out = setup(s); out.connect(g).connect(cityBus);
     city[id] = { gain: g };
   }
-  bed('rain', noiseBuf, (s) => { const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 500; const lp = ctx.createBiquadFilter(); lp.frequency.value = 5000; s.connect(hp).connect(lp); return lp; });
-  bed('water', brownBuf, (s) => { // вода: река, залив, озеро
+  bed('rain', rainBuf, (s) => { const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 500; const lp = ctx.createBiquadFilter(); lp.frequency.value = 5000; s.connect(hp).connect(lp); return lp; });
+  bed('water', bedBrown, (s) => { // вода: река, залив, озеро
     const lp = ctx.createBiquadFilter(); lp.frequency.value = 420; const am = ctx.createGain(); am.gain.value = 0.6;
     const lfo = ctx.createOscillator(); lfo.frequency.value = 0.18; const lg = ctx.createGain(); lg.gain.value = 0.4; lfo.connect(lg).connect(am.gain); lfo.start();
     s.connect(lp).connect(am); return am;
   });
-  bed('wind', noiseBuf, (s) => {
+  bed('wind', bedNoise, (s) => {
     const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.4; bp.frequency.value = 700;
     const lfo = ctx.createOscillator(); lfo.frequency.value = 0.07; const lg = ctx.createGain(); lg.gain.value = 380; lfo.connect(lg).connect(bp.frequency); lfo.start();
     const g = ctx.createGain(); g.gain.value = 0.35; s.connect(bp).connect(g); return g;
   });
-  bed('city', brownBuf, (s) => { const lp = ctx.createBiquadFilter(); lp.frequency.value = 260; const g = ctx.createGain(); g.gain.value = 0.5; s.connect(lp).connect(g); return g; });
+  bed('city', bedBrown, (s) => { const lp = ctx.createBiquadFilter(); lp.frequency.value = 260; const g = ctx.createGain(); g.gain.value = 0.5; s.connect(lp).connect(g); return g; });
   const BEDS = ['rain', 'water', 'wind', 'city'];
   const EVENTS = [...new Set(['gulls', 'tram', 'bells', 'cannon', 'ships', 'cat', 'tea', ...(sounds.list || []).map((x) => x.id).filter((id) => !BEDS.includes(id))])];
-  for (const id of EVENTS) { const g = ctx.createGain(); g.gain.value = 1; g.connect(cityBus); city[id] = { gain: g }; }
+  const ROOM = new Set(['cat', 'tea']); // в комнате — короткий отзвук, всё остальное — на улице
+  for (const id of EVENTS) {
+    const g = ctx.createGain(); g.gain.value = 1; g.connect(cityBus);
+    const send = ctx.createGain(); send.gain.value = ROOM.has(id) ? 0.14 : 0.34; g.connect(send).connect(ROOM.has(id) ? roomVerb : cityVerb);
+    city[id] = { gain: g };
+  }
 
   function bell(t, m, vel, dest) {
     const f = mtof(m);
@@ -334,22 +374,41 @@ export function createAudio(sounds = {}) {
   })();
 
   const sfx = {
-    swift(t) { // стрижи: быстрые высокие «ссии-ссии»
-      const bus = (city.birds || city.gulls).gain;
-      for (let k = 0; k < 4 + (Math.random() * 4 | 0); k++) blip(t + k * 0.11 + Math.random() * 0.03, 5200 + Math.random() * 900, 3800, 0.07, 0.03, bus, 'triangle');
-    },
-    gull(t) {
-      for (let k = 0; k < 3; k++) {
-        const s = t + k * 0.32, o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'triangle';
-        o.frequency.setValueAtTime(1700, s); o.frequency.exponentialRampToValueAtTime(1150, s + 0.25);
-        g.gain.setValueAtTime(0, s); g.gain.linearRampToValueAtTime(0.025, s + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, s + 0.28);
-        const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1500;
-        o.connect(bp).connect(g).connect(city.gulls.gain); o.start(s); o.stop(s + 0.3);
+    swift(t) { // стрижи: пронзительное «сссии» с трелью, стайка проносится в стороне
+      const out = place((city.birds || city.gulls).gain, side(0.9), 0, 2);
+      const n = 4 + (Math.random() * 5 | 0);
+      for (let k = 0; k < n; k++) {
+        const st = t + k * (0.08 + Math.random() * 0.05), d = 0.06 + Math.random() * 0.05, f = 6200 + Math.random() * 1500;
+        const o = ctx.createOscillator(); o.frequency.setValueAtTime(f, st); o.frequency.exponentialRampToValueAtTime(f * 0.72, st + d);
+        const fm = ctx.createOscillator(); fm.frequency.value = 160 + Math.random() * 140; const fg = ctx.createGain(); fg.gain.value = f * 0.06; fm.connect(fg).connect(o.frequency);
+        const g = ctx.createGain(); g.gain.setValueAtTime(0, st); g.gain.linearRampToValueAtTime(0.02, st + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, st + d);
+        o.connect(g).connect(out); noiseHit(st, 'highpass', 6500, 0.7, 0.005, d, out);
+        o.start(st); o.stop(st + d + 0.02); fm.start(st); fm.stop(st + d + 0.02);
       }
     },
-    tram(t) {
-      noiseHit(t, 'lowpass', 180, 0.5, 0.25, 7, city.tram.gain);
-      bell(t + 1.2, 96, 0.5, city.tram.gain); bell(t + 1.45, 96, 0.4, city.tram.gain);
+    gull(t) { // чайка: хриплое «кьяу-кьяу» — пила через две форманты, дрожь голоса и выдох; вдали и в стороне
+      const out = place(city.gulls.gain, side(0.85), 5200, 3);
+      const n = 2 + (Math.random() * 3 | 0), base = 1150 + Math.random() * 380;
+      for (let k = 0; k < n; k++) {
+        const st = t + k * (0.27 + Math.random() * 0.12), d = 0.2 + Math.random() * 0.12;
+        const o = ctx.createOscillator(); o.type = 'sawtooth';
+        o.frequency.setValueAtTime(base * 1.2, st); o.frequency.linearRampToValueAtTime(base * 1.42, st + d * 0.25); o.frequency.exponentialRampToValueAtTime(base * 0.78, st + d);
+        const vib = ctx.createOscillator(); vib.frequency.value = 26 + Math.random() * 12; const vg = ctx.createGain(); vg.gain.value = base * 0.035; vib.connect(vg).connect(o.frequency);
+        const f1 = ctx.createBiquadFilter(); f1.type = 'bandpass'; f1.frequency.value = 1500 + Math.random() * 200; f1.Q.value = 3;
+        const f2 = ctx.createBiquadFilter(); f2.type = 'bandpass'; f2.frequency.value = 3000 + Math.random() * 300; f2.Q.value = 4;
+        const g = ctx.createGain(); g.gain.setValueAtTime(0, st); g.gain.linearRampToValueAtTime(0.05, st + 0.02); g.gain.setValueAtTime(0.042, st + d * 0.6); g.gain.exponentialRampToValueAtTime(0.0001, st + d);
+        o.connect(f1).connect(g); o.connect(f2).connect(g); g.connect(out);
+        noiseHit(st, 'bandpass', 2600, 2, 0.01, d, out);
+        o.start(st); o.stop(st + d + 0.02); vib.start(st); vib.stop(st + d + 0.02);
+      }
+    },
+    tram(t) { // трамвай проезжает слева направо: гул, стук колёс на стыках, звонок
+      const p = ctx.createStereoPanner(); p.pan.setValueAtTime(-0.75, t); p.pan.linearRampToValueAtTime(0.75, t + 7.5); p.connect(city.tram.gain);
+      const lp = ctx.createBiquadFilter(); lp.frequency.value = 1600; lp.connect(p);
+      setTimeout(() => { try { lp.disconnect(); p.disconnect(); } catch {} }, 10000);
+      noiseHit(t, 'lowpass', 170, 0.7, 0.28, 7, lp);
+      for (let k = 0; k < 6; k++) { const st = t + 0.9 + k * (0.85 + Math.random() * 0.1); noiseHit(st, 'bandpass', 950, 3, 0.05, 0.07, lp); noiseHit(st + 0.13, 'bandpass', 820, 3, 0.04, 0.07, lp); }
+      bell(t + 1.2, 96, 0.5, lp); bell(t + 1.45, 96, 0.4, lp);
     },
     chime(t, n, key) {
       const mel = [12, 7, 4, 0, 7, 12, 4, 7];
@@ -371,11 +430,14 @@ export function createAudio(sounds = {}) {
       const g2 = ctx.createGain(); g2.gain.setValueAtTime(0, t); g2.gain.linearRampToValueAtTime(0.9, t + 0.15); g2.gain.exponentialRampToValueAtTime(0.001, t + 4.5);
       s2.connect(f2).connect(g2).connect(city.cannon.gain); s2.start(t); s2.stop(t + 4.6);
     },
-    horn(t) {
-      for (const [s, d] of [[0, 1.8], [2.4, 2.6]]) for (const f of [98, 147]) {
-        const o = ctx.createOscillator(), g = ctx.createGain(), lp = ctx.createBiquadFilter(); o.type = 'sawtooth'; o.frequency.value = f; lp.frequency.value = 500;
-        g.gain.setValueAtTime(0, t + s); g.gain.linearRampToValueAtTime(0.06, t + s + 0.25); g.gain.setValueAtTime(0.06, t + s + d); g.gain.linearRampToValueAtTime(0, t + s + d + 0.5);
-        o.connect(lp).connect(g).connect(city.ships.gain); o.start(t + s); o.stop(t + s + d + 0.6);
+    horn(t) { // гудок теплохода издалека: плотный аккорд из чуть расстроенных пил, вибрато, тёплый фильтр
+      const out = place(city.ships.gain, side(0.5), 900, 9);
+      for (const [st, d] of [[0, 1.8], [2.4, 2.6]]) for (const f of [98, 147, 196]) for (const det of [-5, 4]) {
+        const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det;
+        const vib = ctx.createOscillator(); vib.frequency.value = 4.2 + Math.random(); const vg = ctx.createGain(); vg.gain.value = 1.1; vib.connect(vg).connect(o.frequency);
+        const a = f === 196 ? 0.012 : 0.03, g = ctx.createGain();
+        g.gain.setValueAtTime(0, t + st); g.gain.linearRampToValueAtTime(a, t + st + 0.35); g.gain.setValueAtTime(a, t + st + d); g.gain.linearRampToValueAtTime(0, t + st + d + 0.6);
+        o.connect(g).connect(out); o.start(t + st); o.stop(t + st + d + 0.7); vib.start(t + st); vib.stop(t + st + d + 0.7);
       }
     },
     purr(t) {

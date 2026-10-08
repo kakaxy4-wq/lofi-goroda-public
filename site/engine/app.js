@@ -212,7 +212,12 @@ function wireAudio() {
 }
 function togglePlay() {
   const a = ensureAudioSync();
-  if (a.playing) a.pause(); else { a.setCityVol(+$('#volCity').value); a.play(); }
+  if (a.playing) a.pause();
+  else {
+    // ▶ при выключенной музыке — человек хочет слушать: возвращаем прежнюю громкость, без второго подтверждения
+    if (+$('#volMusic').value === 0) { musicMute.unmute(); toast('Звук включён'); }
+    a.setCityVol(+$('#volCity').value); a.play();
+  }
   if ('mediaSession' in navigator) navigator.mediaSession.playbackState = a.playing ? 'playing' : 'paused';
   $('#play').innerHTML = icon(a.playing ? 'pause' : 'play');
   $('#play').setAttribute('aria-label', a.playing ? 'Пауза' : 'Включить эфир');
@@ -225,7 +230,7 @@ $('#volCity').value = store.get('volCity', 0.7);
 // Нота и город у ползунков: без звука и обратно, прежняя громкость запоминается
 function setupMute(btnId, sliderId, apply) {
   const btn = $(btnId), sl = $(sliderId);
-  let before = +sl.value || 0.7;
+  let before = +sl.value || (sliderId === '#volMusic' ? 0.8 : 0.7);
   const sync = () => btn.setAttribute('aria-pressed', String(+sl.value === 0));
   btn.onclick = async () => {
     await ensureAudio();
@@ -234,8 +239,9 @@ function setupMute(btnId, sliderId, apply) {
     toast(+sl.value === 0 ? (btnId === '#muteMusic' ? 'Музыка без звука' : 'Город без звука') : 'Звук вернулся');
   };
   sl.addEventListener('input', sync); sync();
+  return { unmute() { if (+sl.value === 0) { sl.value = before || 0.7; apply(+sl.value); sync(); } } };
 }
-setupMute('#muteMusic', '#volMusic', (v) => { audio?.setMusicVol(v); store.set('volMusic', v); });
+const musicMute = setupMute('#muteMusic', '#volMusic', (v) => { audio?.setMusicVol(v); store.set('volMusic', v); });
 setupMute('#muteCity', '#volCity', (v) => { audio?.setCityVol(v); store.set('volCity', v); });
 // Горячие клавиши: по e.code, поэтому работают и в русской раскладке.
 const KEY_NAMES = { Space: 'пробел', Digit1: '1', Digit2: '2', Digit3: '3', Digit4: '4' };

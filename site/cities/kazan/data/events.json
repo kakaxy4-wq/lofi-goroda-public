@@ -1,1 +1,24 @@
-[]
+[
+  {
+    "id": "kazan-2026-10-08-synesthesia-lab-closing",
+    "kind": "news",
+    "date": "2026-10-08",
+    "from": "09:00",
+    "to": "22:00",
+    "title": "Закрытие Synesthesia Lab",
+    "text": "Сегодня в Казанской ратуше закрывается фестиваль современной музыки Synesthesia Lab: оркестр Центра Губайдулиной сыграет «Лиру Орфея» и мировую премьеру Даниэля Сатановского.",
+    "source": "tatar-inform.ru (организатор — Центр современной музыки им. С. Губайдулиной)",
+    "url": "https://www.tatar-inform.ru/news/v-kazani-proidet-iv-mezdunarodnyi-festival-sovremennoi-muzyki-synesthesia-lab-6043449"
+  },
+  {
+    "id": "kazan-2026-10-10-zoofest-eko",
+    "kind": "news",
+    "date": "2026-10-10",
+    "from": "09:00",
+    "to": "19:00",
+    "title": "Зоофест Эко в «Казань Экспо»",
+    "text": "Сегодня в «Казань Экспо» первый семейный фестиваль домашних питомцев «Зоофест Эко» — больше двух тысяч зверей, собаки-помощники и консультации ветеринаров. Вход свободный по регистрации.",
+    "source": "tatar-inform.ru (организатор — zoofest.ru)",
+    "url": "https://www.tatar-inform.ru/news/festival-zoofest-eko-proidet-v-kazani-10-oktyabrya-6044573"
+  }
+]
