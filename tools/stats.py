@@ -31,6 +31,7 @@ if cur.get('day'):  # сегодняшний день — из текущего 
     for c in cities:
         cities[c]['users'] = len(cu.get(c, ()))
     hist[cur['day'] + ' (сегодня)'] = {'cities': cities, 'from': {k: len(v) for k, v in cur.get('src', {}).items()},
+                                       'from_ev': cur.get('sev', {}), 'from_play': {k: len(v) for k, v in cur.get('splay', {}).items()},
                                        'users': len(set().union(*cu.values())) if cu else 0}
 
 days = sorted(hist)[-days_n:]
@@ -41,6 +42,8 @@ PLAY = ('btn:play', 'spot:player')
 print(f'{"день":24} {"людей":>6} {"откр.":>6} {"▶":>5} {"кликов":>7}')
 total = collections.Counter()
 src_total = collections.Counter()
+src_play = collections.Counter()
+src_ev = collections.defaultdict(collections.Counter)
 for d in days:
     h = hist[d]
     cs = {c: v for c, v in h['cities'].items() if not only or c == only}
@@ -52,6 +55,9 @@ for d in days:
     for v in cs.values():
         total.update({k: n for k, n in v.items() if k != 'users'})
     src_total.update(h.get('from', {}))
+    src_play.update(h.get('from_play', {}))
+    for k, v in h.get('from_ev', {}).items():
+        src_ev[k].update(v)
 
 print('\nГорода за период (уникальные за день, суммой; открытия):')
 by_city = collections.Counter()
@@ -69,6 +75,9 @@ for k, n in total.most_common(26):
     if k != 'open':
         print(f'  {k:32} {n}')
 
-print('\nИсточники (?from=), уникальных посетителей:')
+print('\nИсточники (?from=): пришло людей → из них нажали ▶ (уникальные за день, суммой)')
 for k, n in src_total.most_common() or [('— меток пока нет', 0)]:
-    print(f'  {k:32} {n}')
+    pl = src_play.get(k, 0)
+    extra = ', '.join(f'{e} {c}' for e, c in src_ev[k].most_common() if e.startswith(('share', 'link:boosty', 'secret')))[:80]
+    print(f'  {k:24} {n:4} → ▶ {pl:3} ({pl / n * 100 if n else 0:3.0f}%)' + (f'   [{extra}]' if extra else ''))
+print('  (▶ по источникам считается с 08.10.2026)')
