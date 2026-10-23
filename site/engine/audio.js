@@ -447,6 +447,7 @@ export function createAudio(sounds = {}, opts = {}) {
       for (let k = 0; k < 6; k++) { const st = t + 0.9 + k * (0.85 + Math.random() * 0.1); noiseHit(st, 'bandpass', 950, 3, 0.05, 0.07, lp); noiseHit(st + 0.13, 'bandpass', 820, 3, 0.04, 0.07, lp); }
       bell(t + 1.2, 96, 0.5, lp); bell(t + 1.45, 96, 0.4, lp);
     },
+    ding(t) { bell(t, 88, 0.3, city.bells.gain); bell(t + 0.55, 83, 0.3, city.bells.gain); }, // «динь-дон» в салоне: пристегните ремни
     chime(t, n, key) {
       const mel = [12, 7, 4, 0, 7, 12, 4, 7];
       for (let i = 0; i < n * 2; i++) bell(t + i * 0.9, key + mel[i % mel.length] + 12, 0.6, city.bells.gain);
@@ -693,7 +694,7 @@ export function createAudio(sounds = {}, opts = {}) {
     lastEnv = env;
     if (VOICE_ON && Math.floor((lastWall - 25) / 3600) !== Math.floor((nowW - 25) / 3600)) announce(env); // :00:25 — после курантов, у всех одновременно
     for (const id of Object.keys(AUTO)) {
-      const target = AUTO[id](env) * (sounds.bedScale?.[id] ?? 1) * (mix[id] ?? 1) * 0.5;
+      const target = (sounds.auto?.[id] ? sounds.auto[id](env) : AUTO[id](env)) * (sounds.bedScale?.[id] ?? 1) * (mix[id] ?? 1) * 0.5; // sounds.auto — свой уровень подложки (гул салона самолёта)
       city[id].gain.gain.setTargetAtTime(target, ctx.currentTime, 0.8);
     }
     for (const id of EVENTS) city[id].gain.gain.setTargetAtTime((mix[id] ?? 1) * (LOUD.has(id) ? calm : 1), ctx.currentTime, 0.1);

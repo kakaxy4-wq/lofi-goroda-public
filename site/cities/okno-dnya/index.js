@@ -5,7 +5,7 @@
 
 const CITIES = await (await fetch('cities/index.json', { cache: 'no-store' })).json();
 // Кандидаты: настоящие города (не скрытые и не «движущиеся» окна — поезда и машина)
-const MOVING = new Set(['bam', 'transsib', 'doroga']);
+const MOVING = new Set(['bam', 'transsib', 'doroga', 'samolet']);
 export const POOL = CITIES.filter((c) => c.enabled && !c.hidden && !MOVING.has(c.id) && !c.of && c.lat != null); // второе окно города (of) — не отдельный ответ
 
 // Номер дня по Москве: одинаковый для всех слушателей; первый выпуск — 20.10.2026

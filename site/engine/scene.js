@@ -723,7 +723,7 @@ export function createScene(el, city) {
       b.beginPath(); b.arc(Math.round(sx), Math.round(sy), 6, 0, 6.28); b.fill();
       b.globalAlpha = 1;
     }
-    for (const c of clouds) {
+    for (const c of S.NO_CLOUDS ? [] : clouds) { // S.NO_CLOUDS — окно выше облаков (самолёт): облака рисует сам город, под крылом
       if (!c.on) continue;
       const x = ((c.x0 + t * c.sp * (0.4 + weather.wind * 0.12)) % (W + c.w + 80)) - c.w - 40;
       b.drawImage(c.c, Math.round(x), Math.round(c.y));
