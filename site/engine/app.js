@@ -13,6 +13,7 @@ import * as marsokhod from './marsokhod.js';
 import { createHints } from './hints.js';
 import { createGuitar, guitarKind, guitarRect } from './guitar.js';
 import { createDay } from './day.js';
+import { addExtraSecrets } from './secrets-extra.js';
 import * as souvenirs from './souvenirs.js';
 import { guestAt, birdInfo } from './guests.js';
 
@@ -52,6 +53,7 @@ configureWeather(CITY.lat, CITY.lon);
 // События по новостям: cities/<id>/data/events.json — [{ id, kind, date, from, to, title, text, source, url }]
 let EVENTS = [];
 fetch(`cities/${CITY.id}/data/events.json`, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : [])).then((d) => (EVENTS = Array.isArray(d) ? d : [])).catch(() => {});
+addExtraSecrets(CITYMOD.day?.real.id || CITY.id, CITYMOD.skyline); // дополнительные секреты окна (engine/secrets-extra.js)
 const SECRETS = CITYMOD.skyline.SECRETS || [];
 const VAN = CITYMOD.places.VAN || null; // линия, по которой в этом окне ездит Марсоход (engine/marsokhod.js); нет — окно его не знает
 if (VAN) marsokhod.init(CITY.id);
