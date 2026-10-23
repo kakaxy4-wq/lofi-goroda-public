@@ -3,6 +3,7 @@
 
 import * as skyline from './skyline.js';
 import { stalls } from './skyline.js';
+import { openChakChakGame } from './games.js';
 
 const CITY = {
   id: 'kazan',
@@ -68,7 +69,6 @@ const sounds = {
     if (day && !e.frozen && chance(0.6)) sfx.gull(t);
     if (mo >= 5 && mo <= 8 && h >= 18 && h <= 22 && chance(1.5)) sfx.swift(t);
     if ((h >= 6 || h < 1) && chance(0.4)) sfx.tram(t);
-    if (!e.frozen && chance(0.3)) sfx.clink(t);
     if (e.navigation && h >= 10 && h <= 21 && chance(0.12)) sfx.horn(t);
     if (crossed(3600)) sfx.hours(t, h % 12 || 12, key);
   },
@@ -103,22 +103,30 @@ const PLACES = {
 };
 const PLACE_ORDER = ['kremlin', 'kulsharif', 'cathedral', 'suyumbike', 'spasskaya', 'millennium', 'dam', 'chasha', 'bauman', 'kaban', 'sloboda'];
 
+const STALL_IDS = ['icecream', 'corn', 'echpochmak']; // только зоны ларьков: tea — это ещё и стакан чая на подоконнике
+// Открытый сейчас вид товара для ларька id (или null, если закрыт).
+const stallKind = (id, env) => {
+  const open = env ? stalls(env) : [];
+  const kind = id === 'corn' && open.includes('tea') ? 'tea' : id;
+  return open.includes(kind) ? kind : null;
+};
+
 export default {
   config: CITY,
   skyline,
   sounds,
   env,
   ticker,
-  places: { HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'chakchak', rects: [[354, 204, 22, 12]] }], PLACES, PLACE_ORDER, games: {} },
-  labels: { cat: 'Кот — погладить', chakchak: 'Чак-чак к чаю', books: 'Путеводитель по Казани', icecream: 'Мороженое', corn: 'Кукуруза / горячий чай', echpochmak: 'Эчпочмаки' },
+  places: { VAN: { x0: -6, x1: 112, y: 154, dir: 1, park: 70 }, HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'chakchak', rects: [[354, 204, 22, 12]] }], PLACES, PLACE_ORDER, games: {} },
+  labels: { cat: 'Кот — погладить', chakchak: 'Чак-чак — построить башню', books: 'Путеводитель по Казани', icecream: 'Мороженое', corn: 'Кукуруза / горячий чай', echpochmak: 'Эчпочмаки' },
   toasts: { cat: 'Кот мурчит на подоконнике над Казанкой.', tea: 'Чай с чабрецом и чак-чаком.', chair: 'Кресло-качалка поскрипывает.' },
+  labelAt: (id, env) => (STALL_IDS.includes(id) && env && !stallKind(id, env) ? 'Ларёк закрыт' : ''),
   onHotspot(id, api) {
-    if (id === 'chakchak') { api.toast('Чак-чак с мёдом — главный казанский десерт к чаю.'); return true; }
+    if (id === 'chakchak') { openChakChakGame({ sfx: api.sfx, live: window.__live }); return true; }
     const STALLS = { icecream: 'Мороженое на набережной: пломбир в вафельном стаканчике.', corn: 'Варёная кукуруза с солью — летняя классика набережной.', echpochmak: 'Эчпочмак — треугольный пирожок с мясом и картошкой, прямо из печи.', tea: 'Горячий чай с чабрецом — зимой на набережной без него никак.' };
-    if (id in STALLS) {
-      const open = api.env ? stalls(api.env) : [];
-      const kind = id === 'corn' && open.includes('tea') ? 'tea' : id;
-      api.toast(open.includes(kind) ? STALLS[kind] : 'Ларёк сейчас закрыт — загляните днём, летом здесь мороженое и кукуруза.');
+    if (STALL_IDS.includes(id)) {
+      const kind = stallKind(id, api.env);
+      api.toast(kind ? STALLS[kind] : 'Ларёк сейчас закрыт — загляните днём, летом здесь мороженое и кукуруза.');
       return true;
     }
     return false;

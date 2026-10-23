@@ -14,7 +14,8 @@ export const HOTSPOTS = [
 ];
 // Городской сувенир в комнате (проверяется после предметов движка, до гирлянды)
 export const ROOM_HOTSPOTS = [
-  { id: 'chizhikfig', rects: [[356, 202, 16, 14]] },
+  { id: 'chizhikfig', rects: [[352, 194, 24, 23]] },
+  { id: 'scarf', rects: [[412, 2, 18, 42]] }, // шарф болельщика — только в день матча (hotspotOn)
 ];
 
 export const PLACES = {

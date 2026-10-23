@@ -72,7 +72,6 @@ const sounds = {
     if (day && !e.frozen && chance(0.4)) sfx.gull(t);
     if (mo >= 5 && mo <= 8 && h >= 18 && h <= 21 && chance(1.5)) sfx.swift(t);
     if ((h >= 5 || h < 1) && chance(0.4)) sfx.tram(t);
-    if (chance(0.3)) sfx.clink(t);
     if (e.navigation && !e.frozen && h >= 10 && h <= 20 && chance(0.12)) sfx.horn(t);
     if (e.event?.kind === 'fireworks' && chance(6)) sfx.cannon(t);
     if (mo === 1 && date === 1 && h === 0 && m < 20 && chance(8)) sfx.cannon(t);
@@ -118,6 +117,9 @@ const STALL_TOASTS = {
 };
 const SLOTS = ['stallA', 'stallB', 'stallC'];
 
+// Открытый сейчас вид товара в слоте id (или undefined, если закрыт).
+const stallKind = (id, env) => { const i = SLOTS.indexOf(id); return i >= 0 && env ? stalls(env)[i] : undefined; };
+
 export default {
   config: CITY,
   skyline,
@@ -127,11 +129,12 @@ export default {
   places: { HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'cherries', rects: [[426, 198, 22, 18]] }], PLACES, PLACE_ORDER, games: {} },
   labels: { cherries: 'Миска черешни', books: 'Путеводитель по Краснодару', stallA: 'Ларёк на набережной', stallB: 'Ларёк на набережной', stallC: 'Ларёк на набережной' },
   toasts: { cat: 'Кот мурчит на подоконнике над Затоном.', tea: 'Чай с чабрецом, а к нему — черешня.', chair: 'Кресло-качалка поскрипывает.' },
+  labelAt: (id, env) => (SLOTS.includes(id) && env && !stallKind(id, env) ? 'Ларёк закрыт' : ''),
   onHotspot(id, api) {
     if (id === 'cherries') { api.toast('Кубанская черешня — главная ягода краснодарского июня.'); return true; }
     const i = SLOTS.indexOf(id);
     if (i >= 0) {
-      const kind = api.env ? stalls(api.env)[i] : null;
+      const kind = stallKind(id, api.env);
       api.toast(kind ? STALL_TOASTS[kind] : 'Ларёк сейчас закрыт — загляните днём: летом здесь черешня, кукуруза и квас.');
       return true;
     }

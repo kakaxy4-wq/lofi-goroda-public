@@ -6,6 +6,7 @@
 import { mixHex, rng } from '../../engine/util.js';
 import { W } from '../../engine/const.js';
 import { drawCars as streetCars, drawPromenade as streetPromenade, drawFireworks, drawPerson } from '../../engine/street.js';
+import { rocketSecret } from '../../engine/rocket.js';
 
 const DAY = {
   far: '#a0a8b8', farDark: '#8c94a8', farRoof: '#7a8298', tower: '#aab4c4',
@@ -445,6 +446,8 @@ export const SECRETS = [
       ctx.globalAlpha = 0.6; ctx.fillStyle = '#dfe8f0'; ctx.fillRect(x + 9, y + 6, 1, 4); ctx.globalAlpha = 1;               // леска
     },
   },
+  // Сумеречный пуск с «Плесецка»: редко, по расписанию от даты (engine/rocket.js)
+  rocketSecret('Плесецк', 62.9, 40.6),
 ];
 
 // События по новостям для Ярославля (fireworks — салют над Стрелкой)

@@ -1,0 +1,12 @@
+{"response": {"count": 4, "items": [
+  {"id": 5012, "from_id": -12345, "owner_id": -12345, "date": 1792000000, "post_type": "post",
+   "text": "Приехали в Читу! Стоим на заправке.",
+   "geo": {"type": "place", "coordinates": "52.033 113.501", "place": {"id": 1, "title": "Чита", "latitude": 52.033, "longitude": 113.501}}},
+  {"id": 5013, "from_id": -12345, "owner_id": -12345, "date": 1792000500, "post_type": "post",
+   "text": "Чужая запись про Москву",
+   "copy_history": [{"id": 1, "owner_id": -777, "date": 1700000000, "text": "оригинал"}]},
+  {"id": 5011, "from_id": -12345, "owner_id": -12345, "date": 1791990000, "post_type": "post", "text": "",
+   "attachments": [{"type": "photo"}]},
+  {"id": 5014, "from_id": -12345, "owner_id": -12345, "date": 1792001000, "post_type": "post", "text": "Утро, туман",
+   "geo": {"type": "place", "place": {"latitude": 51.82, "longitude": 107.6}}}
+]}}

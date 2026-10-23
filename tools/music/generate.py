@@ -173,11 +173,11 @@ class AceStep:
         params = self.GenerationParams(
             task_type="text2music",
             caption=t["tags"],
-            lyrics="[Instrumental]",
-            instrumental=True,
+            lyrics=t.get("lyrics") or "[Instrumental]",   # треки с голосом: слова в prompts.json (add_night_and_vocals.py)
+            instrumental=not t.get("lyrics"),
             bpm=int(t["bpm"]),
             keyscale=t["key"],
-            timesignature="4",
+            timesignature=str(t.get("ts", "4")),   # у вальсов в prompts.json — "3"
             duration=float(t["duration"]),
             inference_steps=a.steps,
             shift=a.shift,

@@ -4,16 +4,17 @@
 <meta charset="utf-8">
 <base href="/">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Санкт-Петербург · Лофи-города</title>
-<meta name="description" content="Лофи-радио Санкт-Петербурга: Нева из окна мансарды, реальная погода, развод мостов по графику, куранты Петропавловки и полуденная пушка. Бесплатно в браузере.">
-<meta property="og:title" content="Санкт-Петербург · Лофи-города">
-<meta property="og:description" content="Нева из окна мансарды. Реальное время, погода и развод мостов. Лофи-эфир, синхронный для всех.">
+<title>Лофи-города: окно дня — угадайте город за шторой</title>
+<meta name="description" content="Лофи-радио с живыми окнами в города России. Каждый день за шторой — один город для всех: угадайте его по свету, звукам, погоде и часам, и шторы откроются.">
+<meta property="og:title" content="Лофи-города: окно дня — угадайте город за шторой">
+<meta property="og:description" content="Лофи-радио с живыми окнами в города России. Каждый день за шторой — один город для всех: угадайте его по свету, звукам, погоде и часам, и шторы откроются.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://lofi-goroda.ru/">
-<meta property="og:image" content="https://lofi-goroda.ru/img/og-piter.png">
+<meta property="og:image" content="https://lofi-goroda.ru/img/og-okno-dnya.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://lofi-goroda.ru/">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="img/icon-192.png">
 <meta property="og:locale" content="ru_RU">
@@ -22,14 +23,18 @@
 <link rel="preload" href="fonts/handjet-cyr.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/pressstart-cyr.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/app.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "RadioStation", "name": "Радио Окно дня", "alternateName": "Лофи-города", "url": "https://lofi-goroda.ru/", "description": "Лофи-радио с живыми окнами в города России. Каждый день за шторой — один город для всех: угадайте его по свету, звукам, погоде и часам, и шторы откроются.", "image": "https://lofi-goroda.ru/img/og-okno-dnya.png", "areaServed": "Окно дня", "isAccessibleForFree": true}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Лофи-города","url":"https://lofi-goroda.ru/","inLanguage":"ru"}</script>
 </head>
 <body>
-<canvas id="scene" aria-label="Санкт-Петербург: вид из окна на Неву и Петропавловскую крепость"></canvas>
+<canvas id="scene" aria-label="Окно дня: вид из окна"></canvas>
 
 <header class="hud top-left">
   <div class="brand">ЛОФИ-ГОРОДА</div>
-  <h1>Санкт-Петербург</h1>
-  <div class="sub"><span id="subtitle">Нева из окна мансарды</span> · <b id="clock">--:--</b> <span id="wx"></span></div>
+  <h1>Окно дня</h1>
+  <div class="sub"><span id="subtitle"></span> · <b id="clock">--:--</b> <span id="wx"></span></div>
+  <div class="now-line" id="nowLine" hidden><span id="nowText"></span> <button id="nowGo" type="button">показать момент</button></div>
+  <p class="about-line" id="aboutLine"><span id="aboutText">Лофи-радио с живыми окнами в города России. Каждый день за шторой — один город для всех: угадайте его по свету, звукам, погоде и часам, и шторы откроются.</span> <a id="aboutLink" href="okno-dnya/o-gorode/">Всё об окне Окна дня →</a></p>
   <button class="share-btn" id="shareBtn" type="button" data-icon="share" data-label="поделиться окном" data-tip="Поделиться окном" data-key="KeyX"></button>
   <div class="live" id="live" hidden></div>
   <div class="badge" id="timeBadge" hidden>машина времени · <button id="badgeNow">вернуться</button></div>
@@ -42,17 +47,20 @@
 <div class="hud ticker" id="ticker"></div>
 
 <footer class="dock">
+  <button class="dock-toggle" id="dockToggle" type="button" aria-expanded="true" aria-label="Свернуть полку"><span></span></button>
   <div class="bar px">
     <button class="play" id="play" data-icon="play" aria-label="Включить эфир" data-tip="Эфир" data-key="Space"></button>
     <div class="np">
-      <div class="np-title" id="npTitle">Радио Питер</div>
+      <div class="np-title" id="npTitle">Радио Окно дня</div>
       <div class="np-sub" id="npSub">нажмите ▶ — эфир идёт синхронно у всех</div>
     </div>
+    <button class="send" id="sendBtn" type="button" data-icon="share" data-label="другу" data-tip="Отправить открытку другу" aria-label="Отправить открытку другу"></button>
     <div class="reacts" aria-label="Реакции">
       <button class="rb" data-react="heart" data-icon="heart" data-tip="Сердечко" data-key="Digit1"></button>
       <button class="rb" data-react="note" data-icon="note" data-tip="Нота" data-key="Digit2"></button>
       <button class="rb" data-react="star" data-icon="star" data-tip="Звезда" data-key="Digit3"></button>
       <button class="rb" data-react="moon" data-icon="moon" data-tip="Луна" data-key="Digit4"></button>
+      <button class="rb" id="noteBtn" data-icon="mail" data-tip="Весточка всем, кто сейчас здесь" data-key="Digit5" aria-haspopup="true" aria-expanded="false"></button>
     </div>
     <div class="vols">
       <div class="vol"><button class="mute" id="muteMusic" data-icon="note" data-tip="Музыка без звука" data-key="KeyM" aria-pressed="false"></button><input type="range" id="volMusic" min="0" max="1" step="0.01" value="0.8" aria-label="Громкость музыки"></div>
@@ -63,7 +71,7 @@
     <button class="qb" id="qLamp" data-icon="lamp" data-label="лампа" data-tip="Настольная лампа" data-key="KeyL"></button>
     <button class="qb" id="qGarland" data-icon="garland" data-label="гирлянда" data-tip="Гирлянда" data-key="KeyG"></button>
     <button class="qb" id="qRain" data-icon="rain" data-label="дождь" data-tip="Дождь за окном" data-key="KeyR"></button>
-    <button class="qb" data-panel="timer" data-icon="timer" data-label="таймер" data-tip="Фокус и сон" data-key="KeyT"></button>
+    <button class="qb" data-panel="timer" data-icon="timer" data-label="таймер" data-tip="Настроение, фокус и сон" data-key="KeyT"></button>
     <button class="qb" data-panel="sounds" data-icon="sound" data-label="звуки" data-tip="Звуки города" data-key="KeyS"></button>
     <button class="qb" data-panel="places" data-icon="pin" data-label="места" data-tip="Места города" data-key="KeyP"></button>
     <button class="qb" data-panel="time" data-icon="clock" data-label="время" data-tip="Время и погода" data-key="KeyW"></button>

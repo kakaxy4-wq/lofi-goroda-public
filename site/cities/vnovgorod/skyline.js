@@ -13,6 +13,7 @@ import { mixHex, rng } from '../../engine/util.js';
 import { W, HORIZON } from '../../engine/const.js';
 import { azToX } from '../../engine/scene.js';
 import { drawCars as streetCars, drawPromenade as streetPromenade, drawFireworks, drawPerson, crowd, KINDS } from '../../engine/street.js';
+import { rocketSecret } from '../../engine/rocket.js';
 
 const DAY = {
   far: '#a8aebe', farDark: '#969db0', farRoof: '#828a9e',
@@ -407,6 +408,8 @@ export const SECRETS = [
       ctx.globalAlpha = 0.6; ctx.fillStyle = '#dfe8f0'; ctx.fillRect(x + 9, y + 6, 1, 4); ctx.globalAlpha = 1;
     },
   },
+  // Сумеречный пуск с «Плесецка»: редко, по расписанию от даты (engine/rocket.js)
+  rocketSecret('Плесецк', 62.9, 40.6),
 ];
 
 // События по новостям (fireworks — салют над Детинцем); своего регулярного салюта у города нет

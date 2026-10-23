@@ -47,6 +47,16 @@ h1 { margin: 0 0 2px; font: 700 48px/1 'Title', 'Lofi', sans-serif; letter-spaci
 body.night h1 { color: #ffe2b0; text-shadow: 0 0 6px #ffb84d, 0 0 16px #ff8a3d99, 2px 2px 0 #000c; }
 .sub { color: var(--muted); font-size: 15px; }
 .sub b { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+/* «что за окном»: на виду только ссылка на историю города; описание из реестра остаётся в разметке
+   для поиска и экранных чтецов, но не показывается — шапка и так плотная (решение владельца 16.10) */
+.about-line { margin: 2px 0 0; max-width: 460px; font-size: 13px; line-height: 1.35; color: var(--muted); }
+.about-line a { color: var(--accent); text-decoration: none; border-bottom: 1px dashed currentColor; pointer-events: auto; white-space: nowrap; }
+.about-line a:hover { color: #fff; }
+#aboutText { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+/* «Что сейчас»: ближайшие события окна и кнопка «показать момент» (машина времени) */
+.now-line { margin: 3px 0 0; max-width: 460px; font-size: 13px; line-height: 1.35; color: var(--muted); }
+.now-line button { pointer-events: auto; background: none; border: 0; padding: 0; font: inherit; color: var(--accent); text-decoration: underline; cursor: pointer; }
+@media (max-width: 700px) { .about-line { max-width: none; font-size: 12px; } }
 .live { font-size: 14px; color: var(--muted); margin-top: 2px; }
 .live b { color: var(--good); font-weight: 600; }
 .live i { display: inline-block; width: 8px; height: 8px; background: var(--good); margin-right: 6px; animation: blink 2s steps(2) infinite; }
@@ -189,6 +199,13 @@ body.idle #scene { cursor: none; }
 .share-btn:hover, .share-btn:focus-visible { background: var(--accent); color: var(--accent-ink); outline: none; }
 .share-preview { display: block; width: 100%; image-rendering: pixelated; margin-bottom: 8px; box-shadow: 0 0 0 2px var(--edge); }
 .share-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.send { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px; border: 0; background: var(--panel); color: var(--accent);
+  font: inherit; font-size: 14px; box-shadow: -2px 0 0 0 var(--edge), 2px 0 0 0 var(--edge), 0 -2px 0 0 var(--edge), 0 2px 0 0 var(--edge); }
+.send svg { width: 14px; height: 14px; fill: currentColor; }
+.send:hover, .send:focus-visible { background: var(--accent); color: var(--accent-ink); outline: none; }
+.send:active { transform: translateY(2px); }
+.share-sign { display: flex; gap: 8px; align-items: center; margin: 0 0 8px; }
+.share-sign input { flex: 1; min-width: 0; font: inherit; padding: 6px 8px; background: var(--panel-2); color: var(--ink); border: 0; box-shadow: 0 0 0 2px var(--edge); }
 
 /* надписи поверх сцены не должны перехватывать мышь у предметов */
 .ticker, .top-left { pointer-events: none; }
@@ -210,6 +227,22 @@ body.idle #scene { cursor: none; }
   .bar { flex-wrap: wrap; row-gap: 4px; }
   .np { flex: 1 1 calc(100% - 64px); }
   .reacts { flex: 1 1 auto; }
+  /* кнопки под палец: быстрые делят ширину поровну и высотой 44, реакции и звук — 36 */
+  .quick { gap: 3px; flex: 1 1 100%; width: 100%; }
+  .qb { flex: 1 1 0; width: auto; min-width: 0; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; }
+  .qb svg { width: 18px; height: 18px; }
+  .rb { width: 36px; height: 36px; }
+  .mute { width: 36px; height: 36px; padding: 10px; }
+}
+/* язычок над полкой на телефоне: свернуть до одной строки (▶ и название) — окну больше места */
+
+.dock-toggle { display: none; }
+@media (max-width: 700px) {
+  .dock-toggle { display: block; position: absolute; left: 50%; top: -14px; transform: translateX(-50%); width: 64px; height: 16px; padding: 0; border: 0; background: var(--panel); box-shadow: 0 -2px 0 0 var(--edge), -2px 0 0 0 var(--edge), 2px 0 0 0 var(--edge); cursor: pointer; }
+  .dock-toggle span { display: block; width: 0; height: 0; margin: 4px auto 0; border: 5px solid transparent; border-top: 6px solid var(--muted); }
+  body.dock-min .dock-toggle span { margin-top: -1px; border-top: 0; border-bottom: 6px solid var(--muted); }
+  body.dock-min .quick, body.dock-min .reacts, body.dock-min .vols, body.dock-min .np-sub { display: none; }
+  body.dock-min .bar { flex-wrap: nowrap; }
 }
 
 /* выбор города: название — кнопка «Ярославль ▾», по клику список городов */
@@ -218,8 +251,177 @@ body.idle #scene { cursor: none; }
 .city-pick[aria-expanded="true"] .caret { transform: rotate(180deg); }
 .city-pick:hover .caret, .city-pick:focus-visible .caret { color: #fff; }
 .city-pick:focus-visible { outline: 2px dashed var(--accent); outline-offset: 2px; }
-.city-menu { position: fixed; z-index: 6; min-width: 220px; padding: 6px 0; text-shadow: none; font-size: 17px; }
+.city-menu { position: fixed; z-index: 6; min-width: 220px; padding: 6px 0; text-shadow: none; font-size: 17px; overflow-y: auto; overscroll-behavior: contain; }
+/* весточки: список фраз над полкой и проплывающие карточки */
+.note-pop { position: fixed; z-index: 7; left: 50%; transform: translateX(-50%); width: min(420px, calc(100vw - 24px)); max-height: 50vh; overflow-y: auto;
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 10px; background: var(--panel); box-shadow: 0 0 0 2px var(--edge), 0 8px 24px #0008; }
+.note-pop .label { flex: 1 1 100%; margin: 0 0 2px; }
+.note-pop button { font: inherit; font-size: 15px; padding: 5px 9px; color: var(--ink); background: var(--edge); border: 1px solid var(--panel-2); cursor: pointer; }
+.note-pop button:hover, .note-pop button:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+.note-card { position: fixed; z-index: 5; bottom: calc(var(--dock, 140px) + 24px); max-width: min(320px, 80vw); padding: 8px 12px; pointer-events: none;
+  background: #241a1ce6; color: var(--ink); font-size: 16px; box-shadow: 0 0 0 2px var(--edge); animation: note-up 7.5s ease-out forwards; }
+.note-card small { display: block; color: var(--muted); font-size: 12px; }
+.note-card.mine { box-shadow: 0 0 0 2px var(--accent); }
+@keyframes note-up { 0% { opacity: 0; transform: translateY(16px); } 10% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-60px); } }
+@media (prefers-reduced-motion: reduce) { .note-card { animation: none; } }
+.city-tour { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 8px 2px; padding-top: 8px; border-top: 1px dashed var(--panel-2); font-size: 14px; color: var(--muted); }
+.city-tour span { flex: 1 1 100%; }
+.city-tour button { font: inherit; font-size: 14px; padding: 3px 8px; color: var(--ink); background: var(--edge); border: 1px solid var(--panel-2); cursor: pointer; }
+.city-tour button:hover, .city-tour button:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+.city-search { display: block; width: calc(100% - 16px); margin: 2px 8px 6px; padding: 6px 8px; font: inherit; font-size: 16px; color: var(--ink); background: var(--edge); border: 1px solid var(--panel-2); border-radius: 0; }
+.city-search:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.city-search::placeholder { color: var(--muted); }
 .city-menu a { display: flex; justify-content: space-between; gap: 16px; padding: 5px 14px; color: var(--ink); text-decoration: none; }
 .city-menu a:hover, .city-menu a:focus-visible { background: var(--panel-2); color: #fff; outline: none; }
 .city-menu a[aria-current] { color: var(--accent); }
 .city-menu a small { color: var(--muted); font-size: 13px; }
+/* подсветка места в окне: при выборе из списка и при первом заходе */
+.spot-hl { position: fixed; z-index: 4; pointer-events: none; border: 2px solid var(--accent); border-radius: 4px; box-shadow: 0 0 0 2px rgba(0, 0, 0, .35), 0 0 16px rgba(242, 185, 74, .55); animation: spot-pulse 1.1s ease-in-out infinite; }
+@keyframes spot-pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .spot-hl { animation: none; } }
+.spot-card { cursor: pointer; }
+.spot-card:hover h3 { color: var(--accent); }
+/* секреты: найденные — звёздочка, ненайденные — пустой кружок и приглушённая подсказка */
+.secret { display: flex; gap: 10px; align-items: baseline; color: var(--muted); }
+.secret i { flex: none; width: 9px; height: 9px; border: 2px solid var(--muted); border-radius: 50%; transform: translateY(1px); opacity: .7; }
+.secret.found { color: var(--ink); }
+.secret .now-tag { color: var(--accent); font-weight: normal; margin-left: 4px; }
+.secret.now i { border-color: var(--accent); opacity: 1; }
+.secret .peek { margin-left: 8px; font: inherit; font-size: 13px; padding: 1px 7px; color: var(--muted); background: transparent; border: 1px dashed var(--panel-2); cursor: pointer; }
+.secret .peek:hover, .secret .peek:focus-visible { color: var(--accent); border-color: var(--accent); outline: none; }
+.secret.found i { border: 0; border-radius: 0; background: var(--accent); clip-path: polygon(50% 0, 63% 37%, 100% 38%, 70% 61%, 81% 100%, 50% 77%, 19% 100%, 30% 61%, 0 38%, 37% 37%); width: 12px; height: 12px; opacity: 1; }
+
+/* Лофи-поезд: схема маршрута, табло станций, значки поездки */
+.bam-map { padding: 8px; background: #e9dfc6; }
+.bam-svg { display: block; width: 100%; height: auto; font: 13px Lofi, sans-serif; }
+.bam-svg .sea { fill: #a9c2d6; }
+.bam-svg .lake { fill: #8fb2cf; }
+.bam-svg .water { fill: #4f7090; font-size: 12px; font-style: italic; }
+.bam-svg .rest { fill: none; stroke: #8c8476; stroke-width: 2.5; stroke-dasharray: 5 4; }
+.bam-svg .done { fill: none; stroke: #b8362c; stroke-width: 3.5; stroke-linejoin: round; }
+.bam-svg .st { fill: #e9dfc6; stroke: #3a2a20; stroke-width: 1.4; }
+.bam-svg .st.big { fill: #3a2a20; }
+.bam-svg text { fill: #3a2a20; }
+.bam-svg .tun { fill: #3a2a20; }
+.bam-svg .brg { stroke: #2f5a8a; stroke-width: 2.5; }
+.bam-svg .train { fill: #f2b94a; stroke: #6a2a10; stroke-width: 2; }
+.bam-svg .train-halo { fill: #f2b94a; opacity: .35; transform-box: fill-box; transform-origin: center; animation: bam-pulse 1.8s ease-out infinite; }
+@keyframes bam-pulse { from { transform: scale(.6); opacity: .55; } to { transform: scale(1.8); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .bam-svg .train-halo { animation: none; } }
+.bam-bar { height: 8px; background: var(--edge); margin: 8px 0 4px; }
+.bam-bar i { display: block; height: 100%; background: linear-gradient(90deg, #b8362c, var(--accent)); }
+.bam-tt { width: 100%; border-collapse: collapse; }
+.bam-tt td { padding: 4px 0; border-bottom: 1px dashed var(--panel-2); }
+.bam-tt td:nth-child(2) { text-align: right; padding: 4px 12px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.bam-tt td:last-child { text-align: right; white-space: nowrap; }
+.bam-badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 8px; }
+.bam-badge { display: flex; gap: 8px; align-items: flex-start; padding: 6px; background: var(--edge); color: var(--muted); opacity: .75; }
+.bam-badge i { flex: none; width: 18px; height: 18px; margin-top: 2px; border: 2px dashed var(--muted); border-radius: 50%; }
+.bam-badge b { display: block; font-weight: normal; }
+.bam-badge small { display: block; font-size: 12px; line-height: 1.25; }
+.bam-badge.on { opacity: 1; color: var(--ink); background: var(--panel-2); }
+.bam-badge.on i { border: 0; background: radial-gradient(circle at 35% 35%, #ffe49a, var(--accent) 55%, #b8762a); box-shadow: 0 0 0 2px #6a3a10; }
+.tea-foot { flex-wrap: wrap; gap: 6px; }
+.tea-foot .pour { touch-action: none; user-select: none; -webkit-user-select: none; }
+/* Расписание движения в поезде: бумажный листок за стеклом в деревянной рамке */
+.tt-frame { padding: 7px; background: #5a3f28; box-shadow: inset 0 0 0 2px #7a5634, inset 0 0 0 4px #3a2818; }
+.tt-sheet { background: #f2ead2; color: #2a2418; padding: 10px 10px 8px; font-family: 'Courier New', Courier, monospace; font-size: 13px; background-image: linear-gradient(135deg, rgba(255,255,255,.35), rgba(255,255,255,0) 40%); }
+.tt-h { margin: 0; text-align: center; font-weight: bold; text-transform: uppercase; letter-spacing: .06em; font-size: 13px; }
+.tt-route { margin: 2px 0 8px; text-align: center; }
+.tt { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.tt th { font-weight: normal; font-size: 11px; text-align: right; border-top: 1px solid #2a2418; border-bottom: 1px solid #2a2418; padding: 3px 4px; }
+.tt th:first-child, .tt td:first-child { text-align: left; }
+.tt td { text-align: right; padding: 2px 4px; border-bottom: 1px dotted #b8ac8c; white-space: nowrap; }
+.tt td:first-child { white-space: normal; }
+.tt tr.past td { color: #9a907a; }
+.tt tr.past td:first-child { text-decoration: line-through; text-decoration-color: #b8ac8c; }
+.tt tr.now td, .tt tr.next td { background: #ffe9a0; font-weight: bold; }
+.tt tr.now small { font-weight: normal; color: #a8401a; }
+.tt-note { margin: 8px 0 0; font-size: 11px; color: #5a5040; }
+/* время в городах относительно Москвы и «у вас» — для сравнения */
+.city-menu a .ct { margin-left: auto; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.city-menu a[aria-current] .ct { color: var(--accent); }
+.city-menu .city-you { margin: 2px 14px 6px; font-size: 12px; color: var(--muted); }
+/* длинное название трека: при наведении или нажатии — целиком во всплывающей подсказке над плеером
+   (строка в плеере не растёт: иначе полка становится выше и окно сжимается) */
+.np-title, .np-sub { cursor: default; }
+.tip.np-tip { white-space: normal; max-width: min(520px, calc(100vw - 24px)); transform: translateY(-100%); line-height: 1.35; }
+/* тосты — лёгкие и воздушные: скругление, полупрозрачная подложка с размытием, мягкая тень, без пиксельной рамки */
+.toast.px { background: rgba(26, 22, 34, 0.72); -webkit-backdrop-filter: blur(10px) saturate(1.2); backdrop-filter: blur(10px) saturate(1.2);
+  color: #f6efe2; line-height: 1.45; font-size: 15px; padding: 10px 18px; border-radius: 16px; cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35); max-width: min(520px, calc(100vw - 32px)); }
+/* ‹ › — соседний город: тонкие стрелки без подложки, проявляются при наведении */
+.city-step { pointer-events: auto; display: inline-flex; gap: 2px; margin-left: 4px; vertical-align: middle; }
+.city-step button { font: 300 22px/1 sans-serif; width: 22px; height: 26px; border: 0; background: none; color: var(--ink);
+  opacity: .45; cursor: pointer; padding: 0; text-shadow: 1px 1px 0 #0008; transition: opacity .15s, transform .15s; }
+.city-step button:hover, .city-step button:focus-visible { opacity: 1; color: var(--accent); outline: none; }
+.city-step [data-step="-1"]:hover { transform: translateX(-2px); } .city-step [data-step="1"]:hover { transform: translateX(2px); }
+/* выбор города: тонкий уголок вместо треугольника */
+.city-pick .caret { width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; color: var(--accent);
+  transform: rotate(45deg) translateY(-3px); opacity: .7; font-size: 0; align-self: center; transition: transform .15s; }
+.city-pick[aria-expanded="true"] .caret { transform: rotate(225deg) translateY(-1px); }
+/* спокойный режим (фокус, сон): без реакций */
+body.calm .reacts { display: none; }
+
+/* первый запуск: лёгкая карточка знакомства над полкой — стиль тостов, не модалка */
+.onboard { position: fixed; z-index: 5; left: 50%; bottom: calc(var(--dock, 90px) + 56px); transform: translateX(-50%);
+  width: min(400px, calc(100vw - 24px)); padding: 16px 18px 10px; text-align: center;
+  background: rgba(26, 22, 34, 0.78); -webkit-backdrop-filter: blur(10px) saturate(1.2); backdrop-filter: blur(10px) saturate(1.2);
+  color: #f6efe2; line-height: 1.45; border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35); }
+.onboard .ob-hi { margin: 0 0 10px; font-size: 16px; }
+.onboard .ob-go { display: inline-flex; align-items: center; gap: 9px; border: 0; padding: 11px 22px; font: inherit; font-size: 19px;
+  background: var(--accent); color: var(--accent-ink); border-radius: 12px;
+  box-shadow: inset 0 -4px 0 0 #b07820, inset 0 3px 0 0 #ffe0a0, 0 6px 18px rgba(0, 0, 0, 0.35); }
+.onboard .ob-go svg { width: 15px; height: 15px; fill: currentColor; }
+.onboard .ob-go:hover, .onboard .ob-go:focus-visible { background: #ffd27a; outline: none; }
+.onboard .ob-go:active { transform: translateY(2px); }
+.onboard .ob-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.onboard .ob-opt { border: 0; padding: 9px 16px; font: inherit; font-size: 16px; background: #ffffff17; color: #f6efe2; border-radius: 10px; }
+.onboard .ob-opt:hover, .onboard .ob-opt:focus-visible { background: var(--accent); color: var(--accent-ink); outline: none; }
+.onboard .ob-opt:active { transform: translateY(2px); }
+.onboard .ob-skip { display: block; margin: 8px auto 2px; border: 0; background: none; color: var(--muted); font-size: 13px; text-decoration: underline dashed; }
+.onboard .ob-skip:hover, .onboard .ob-skip:focus-visible { color: var(--ink); outline: none; }
+@media (max-height: 520px) { .onboard { bottom: calc(var(--dock, 70px) + 34px); padding: 10px 14px 6px; } .onboard .ob-hi { margin: 0 0 6px; } }
+
+/* Telegram Mini App: отступы под шапку/вырезы клиента (переменные ставит Telegram 8.0+); вне Telegram класса tg нет */
+html.tg .top-left { top: calc(14px + var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px));
+  left: calc(18px + var(--tg-safe-area-inset-left, 0px)); max-width: calc(100vw - 36px - var(--tg-safe-area-inset-left, 0px) - var(--tg-safe-area-inset-right, 0px)); }
+html.tg .dock { padding-bottom: calc(12px + env(safe-area-inset-bottom) + var(--tg-safe-area-inset-bottom, 0px));
+  padding-left: calc(14px + var(--tg-safe-area-inset-left, 0px)); padding-right: calc(14px + var(--tg-safe-area-inset-right, 0px)); }
+@media (max-height: 520px) {
+  html.tg .dock { padding-bottom: calc(6px + env(safe-area-inset-bottom) + var(--tg-safe-area-inset-bottom, 0px));
+    padding-left: calc(10px + var(--tg-safe-area-inset-left, 0px)); padding-right: calc(10px + var(--tg-safe-area-inset-right, 0px)); }
+}
+html.tg-nofs #fs { display: none; } /* старый клиент Telegram: настоящего fullscreen нет */
+
+/* Окно «Дорога»: попутчик — канал «Грузин на Марсе». Оранжевый — цвет его аватарки */
+body.city-doroga { --accent: #ff7a3a; --accent-2: #ff692a; }
+.poputchik { display: inline-flex; align-items: center; gap: 8px; margin: 4px 0 0; padding: 3px 10px 3px 3px; border-radius: 6px;
+  background: rgba(20, 14, 10, 0.55); font-size: 13px; color: var(--muted); pointer-events: auto; }
+.poputchik img { width: 20px; height: 20px; border-radius: 4px; image-rendering: pixelated; }
+.poputchik b { color: #ff7a3a; font-weight: 600; }
+.poputchik a { color: var(--muted); text-decoration: none; border-bottom: 1px dashed currentColor; }
+.poputchik a:hover { color: #fff; }
+@media (max-width: 700px) { .poputchik { font-size: 12px; gap: 6px; } .poputchik a:nth-of-type(3) { display: none; } }
+
+/* ---------- «Окно дня»: карточка игры поверх задёрнутых штор (engine/day.js) ---------- */
+.day-card { position: fixed; z-index: 4; top: 96px; left: 50%; transform: translateX(-50%); width: min(400px, calc(100vw - 24px));
+  padding: 10px 14px 12px; font-size: 15px; line-height: 1.4; max-height: calc(100vh - var(--dock, 90px) - 120px); overflow: auto; }
+.day-card.day-mini { width: auto; padding: 0; }
+.day-mini button { background: none; border: 0; color: var(--ink); font: inherit; padding: 8px 14px; cursor: pointer; }
+.day-h { display: flex; justify-content: space-between; align-items: center; color: var(--accent); }
+.day-x { background: none; border: 0; color: var(--ink); font-size: 24px; line-height: 1; cursor: pointer; padding: 0 2px; }
+.day-q { margin: 6px 0; }
+.day-hints { margin: 6px 0; padding-left: 18px; }
+.day-hints li { margin: 3px 0; }
+.day-hints b { color: var(--accent); font-weight: 600; }
+.day-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.day-row.small .btn { font-size: 13px; padding: 4px 8px; }
+.day-row select { flex: 1 1 160px; min-width: 0; font: inherit; padding: 6px; background: var(--panel-2); color: var(--ink); border: 2px solid var(--edge); }
+.day-meta { margin: 6px 0 0; font-size: 13px; color: #bfae96; }
+.day-res { margin: 8px 0 4px; font-size: 18px; color: #ffe2b0; }
+/* до ответа прячем всё, что выдаёт город: часы (до подсказки), погоду, описание, «Что сейчас», бегущую строку, места, время, открытку */
+body.day-locked #wx, body.day-locked #aboutLine, body.day-locked #nowLine, body.day-locked #ticker, body.day-locked #shareBtn,
+body.day-locked #sendBtn, body.day-locked [data-panel="places"], body.day-locked [data-panel="time"] { display: none !important; }
+body.day-locked:not(.day-clock) #clock { visibility: hidden; }
+body.obs .day-card { display: none; }

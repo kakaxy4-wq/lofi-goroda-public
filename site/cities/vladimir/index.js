@@ -71,7 +71,6 @@ const sounds = {
     if (day && !e.frozen && chance(0.5)) sfx.gull(t);
     if (mo >= 5 && mo <= 8 && h >= 18 && h <= 22 && chance(1.5)) sfx.swift(t);
     if (h >= 5 && h < 24 && chance(0.15)) sfx.horn(t);
-    if (!e.frozen && chance(0.3)) sfx.clink(t);
     if (crossed(3600)) sfx.hours(t, h % 12 || 12, key);
   },
 };
@@ -119,20 +118,23 @@ const STALL_TOASTS = {
   tea: 'Горячий чай — зимой на набережной без него никак.',
 };
 
+// Открытый сейчас ларёк в слоте id (или undefined, если закрыт).
+const stallAt = (id, env) => (env ? stalls(env).find((o) => o.x === STALL_POS[id]) : undefined);
+
 export default {
   config: CITY,
   skyline,
   sounds,
   env,
   ticker,
-  places: { HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'jam', rects: [[425, 199, 18, 17]] }], PLACES, PLACE_ORDER, games: {} },
+  places: { VAN: { x0: 378, x1: 484, y: 150, dir: -1, park: 400 }, HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'jam', rects: [[425, 199, 18, 17]] }], PLACES, PLACE_ORDER, games: {} },
   labels: { cat: 'Кот — погладить', jam: 'Варенье из владимирской вишни', books: 'Путеводитель по Владимиру', stallA: 'Ларёк: мороженое', stallB: 'Ларёк: калачи, вишня, чай', stallC: 'Ларёк: огурцы, калачи, чай' },
   toasts: { cat: 'Кот мурчит на подоконнике над Клязьмой.', tea: 'Чай с вишнёвым вареньем.', chair: 'Кресло-качалка поскрипывает.' },
+  labelAt: (id, env) => (id in STALL_POS && env && !stallAt(id, env) ? 'Ларёк закрыт' : ''),
   onHotspot(id, api) {
     if (id === 'jam') { api.toast('Варенье из владимирской вишни — к чаю, пока за окном соборы.'); return true; }
     if (id in STALL_POS) {
-      const open = api.env ? stalls(api.env) : [];
-      const s = open.find((o) => o.x === STALL_POS[id]);
+      const s = stallAt(id, api.env);
       api.toast(s ? STALL_TOASTS[s.k] : 'Ларёк сейчас закрыт — загляните днём: летом здесь мороженое, калачи и вишня.');
       return true;
     }

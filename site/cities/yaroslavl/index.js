@@ -46,6 +46,13 @@ function ticker(e) {
   return lines;
 }
 
+// Ближайшие события для строки «Что сейчас» (app.js)
+function moments(e) {
+  const l = e.local, hm = l.getUTCHours() * 60 + l.getUTCMinutes() + l.getUTCSeconds() / 60;
+  if (!isCityDay(l) || hm >= 1380) return [];
+  return [{ title: 'салют над Стрелкой', atMs: e.ms + (1380 - hm) * 60e3 }];
+}
+
 // Названия живых вставок эфира: места города (имя, «где») и его приметы
 const GEN_TITLES = { places: [["Стрелка", "на Стрелке"], ["Волжская набережная", "на Волжской набережной"], ["Которосль", "на Которосли"], ["Тверицы", "в Тверицах"], ["Советская площадь", "на Советской площади"], ["Даманский остров", "на Даманском острове"], ["Коровники", "в Коровниках"], ["Губернаторский сад", "в Губернаторском саду"]],
   things: ["медведь с секирой", "катер в Тверицы", "пошехонский сыр", "Волга в тумане", "квас", "беседка над Волгой", "жёлтые окна", "тёплый вечер"] };
@@ -73,7 +80,6 @@ const sounds = {
     if (day && !e.frozen && chance(0.6)) sfx.gull(t);
     if (mo >= 5 && mo <= 8 && h >= 18 && h <= 22 && chance(1.5)) sfx.swift(t);
     if (h >= 6 && chance(0.25)) sfx.tram(t);
-    if (!e.frozen && chance(0.3)) sfx.clink(t);
     if (e.navigation && h >= 8 && h <= 21 && chance(0.08)) sfx.horn(t);
     if (crossed(60)) { // гудок при отходе катера и «Метеора»
       const k = katerRun(e), mr = meteorRun(e);
@@ -122,15 +128,25 @@ const PLACES = {
 };
 const PLACE_ORDER = ['strelka', 'monument', 'uspensky', 'korovniki', 'kotorosl', 'monastery', 'rotunda', 'ilya', 'metropolitan', 'volgatower', 'embankment', 'jubilee', 'center', 'tveritsy', 'kirova'];
 
+const STALL_IDS = ['icecream', 'kvas', 'corn']; // только зоны ларьков: tea — это ещё и стакан чая на подоконнике
+// Открытый сейчас вид товара для ларька id (или null, если закрыт).
+const stallKind = (id, env) => {
+  const open = env ? stalls(env) : [];
+  const kind = id === 'kvas' && open.includes('tea') ? 'tea' : id === 'corn' && open.includes('syr') ? 'syr' : id;
+  return open.includes(kind) ? kind : null;
+};
+
 export default {
   config: CITY,
   skyline,
   sounds,
   env,
   ticker,
+  moments,
   places: { HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'medvezhonok', rects: [[272, 192, 22, 22]] }], PLACES, PLACE_ORDER, games: {} },
   labels: { cat: 'Кот — погладить', medvezhonok: 'Медвежонок с секирой', books: 'Путеводитель по Ярославлю', icecream: 'Мороженое', kvas: 'Квас / горячий чай', corn: 'Кукуруза / пошехонский сыр' },
   toasts: { cat: 'Кот мурчит на подоконнике над Волгой.', tea: 'Горячий чай — смотреть на Стрелку.', chair: 'Кресло-качалка поскрипывает.' },
+  labelAt: (id, env) => (STALL_IDS.includes(id) && env && !stallKind(id, env) ? 'Ларёк закрыт' : ''),
   onHotspot(id, api) {
     if (id === 'medvezhonok') { api.toast('Медведь с золотой секирой на плече — герб Ярославля. По легенде, так князь Ярослав одолел зверя на месте будущего города.'); return true; }
     const STALLS = {
@@ -140,10 +156,9 @@ export default {
       tea: 'Горячий чай из термоса — зимой у Волги без него никак.',
       syr: 'Пошехонский сыр — назван в честь городка Пошехонье Ярославской области.',
     };
-    if (id in STALLS) {
-      const open = api.env ? stalls(api.env) : [];
-      const kind = id === 'kvas' && open.includes('tea') ? 'tea' : id === 'corn' && open.includes('syr') ? 'syr' : id;
-      api.toast(open.includes(kind) ? STALLS[kind] : 'Ларёк сейчас закрыт — загляните днём, летом здесь мороженое и квас.');
+    if (STALL_IDS.includes(id)) {
+      const kind = stallKind(id, api.env);
+      api.toast(kind ? STALLS[kind] : 'Ларёк сейчас закрыт — загляните днём, летом здесь мороженое и квас.');
       return true;
     }
     return false;

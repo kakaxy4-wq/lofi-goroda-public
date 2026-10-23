@@ -8,6 +8,7 @@
 import { rng, mixHex } from '../../engine/util.js';
 import { W } from '../../engine/const.js';
 import { drawCars as streetCars, drawPromenade as streetPromenade, drawFireworks } from '../../engine/street.js';
+import { rocketSecret } from '../../engine/rocket.js';
 
 const DAY = {
   isl: '#9aa8bc', islDark: '#8a98ae', farBr: '#c8d0dc', farBrDark: '#a8b2c2',
@@ -43,6 +44,7 @@ const WINTER = {
   night: { tree: '#1a1a1e', treeDark: '#151518', hill: '#262a34', hillDark: '#20242e', hill2: '#2a2e38' },
 };
 export const PALETTE = { DAY, NIGHT, AUTUMN, WINTER };
+export const GUITAR = 'uke'; // у окна во Владивостоке — укулеле, а не гитара (engine/guitar.js)
 
 const poly = (pts, x) => {
   if (x <= pts[0][0]) return pts[0][1];
@@ -385,6 +387,8 @@ export const SECRETS = [
     },
     draw(b, env, st, dayF) { drawFireworks(b, env.ms / 1000, 250, 40, dayF); },
   },
+  // Сумеречный пуск с «Восточного»: редко, по расписанию от даты (engine/rocket.js)
+  rocketSecret('Восточный', 51.9, 128.3),
 ];
 
 // События по новостям (data/events.json): fireworks — салют над бухтой

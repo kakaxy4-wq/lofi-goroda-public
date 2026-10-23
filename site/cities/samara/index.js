@@ -74,7 +74,6 @@ const sounds = {
     if (day && !e.frozen && chance(0.6)) sfx.gull(t);
     if (mo >= 5 && mo <= 8 && h >= 18 && h <= 22 && chance(1.5)) sfx.swift(t);
     if (h >= 6 && chance(0.2)) sfx.tram(t);
-    if (chance(0.3)) sfx.clink(t);
     if (e.navigation && !e.frozen && h >= 7 && h <= 21 && chance(0.08)) sfx.horn(t);
     if (e.event?.kind === 'fireworks' && chance(10)) sfx.cannon(t);
     if (crossed(3600)) sfx.hours(t, h % 12 || 12, key);
@@ -117,6 +116,14 @@ const STALL_TOASTS = {
   souvenir: 'Сувенирный ларёк: магниты с «Ладьёй» и маленькие ракеты «Союз» — их в Самаре делают по-настоящему.',
 };
 
+const STALL_IDS = ['icecream', 'corn', 'souvenir'];
+// Открытый сейчас вид товара для ларька id (или null, если закрыт).
+const stallKind = (id, env) => {
+  const open = env ? stalls(env) : [];
+  const kind = id === 'icecream' && open.includes('tea') ? 'tea' : id === 'corn' && open.includes('blini') ? 'blini' : id;
+  return open.includes(kind) ? kind : null;
+};
+
 export default {
   config: CITY,
   skyline,
@@ -126,12 +133,12 @@ export default {
   places: { HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'rocket', rects: [[274, 178, 18, 36]] }], PLACES, PLACE_ORDER, games: {} },
   labels: { rocket: 'Ракета «Союз»', books: 'Путеводитель по Самаре', icecream: 'Мороженое / горячий чай', corn: 'Кукуруза / блины', souvenir: 'Сувениры' },
   toasts: { cat: 'Кот мурчит на подоконнике над Волгой.', tea: 'Горячий чай — смотреть, как над Жигулями садится солнце.', chair: 'Кресло-качалка поскрипывает.' },
+  labelAt: (id, env) => (STALL_IDS.includes(id) && env && !stallKind(id, env) ? 'Ларёк закрыт' : ''),
   onHotspot(id, api) {
     if (id === 'rocket') { api.toast('Модель ракеты «Союз». Ракеты-носители «Союз» собирают в Самаре, на заводе «Прогресс»; у проспекта Ленина стоит настоящая ракета-памятник с музеем «Самара Космическая».'); return true; }
     if (id === 'icecream' || id === 'corn' || id === 'souvenir') {
-      const open = api.env ? stalls(api.env) : [];
-      const kind = id === 'icecream' && open.includes('tea') ? 'tea' : id === 'corn' && open.includes('blini') ? 'blini' : id;
-      api.toast(open.includes(kind) ? STALL_TOASTS[kind] : 'Ларёк сейчас закрыт — загляните днём: летом здесь мороженое и кукуруза, зимой чай с блинами.');
+      const kind = stallKind(id, api.env);
+      api.toast(kind ? STALL_TOASTS[kind] : 'Ларёк сейчас закрыт — загляните днём: летом здесь мороженое и кукуруза, зимой чай с блинами.');
       return true;
     }
     return false;

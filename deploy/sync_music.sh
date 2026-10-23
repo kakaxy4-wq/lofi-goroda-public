@@ -3,15 +3,16 @@
 # Файлы не перезаписываются и не удаляются — только добавляются новые (имя трека = его id, он не меняется).
 # Запуск: bash deploy/sync_music.sh (вызывается из deploy.sh)
 set -euo pipefail
+source "$(dirname "$0")/ssh_env.sh"
 cd "$(dirname "$0")/../site"
 HOST=${HOST:-myvps2}
 remote=$(ssh "$HOST" 'mkdir -p /opt/lofi-goroda/music && cd /opt/lofi-goroda/music && find . -name "*.mp3" | sed "s|^\./||"')
+# одно сравнение списков вместо grep на каждый файл (в Windows-bash это было 3–5 минут)
 missing=()
-for f in cities/*/music/*.mp3; do
-  [ -e "$f" ] || continue
-  rel="$(echo "$f" | cut -d/ -f2)/$(basename "$f")"   # <id>/<file>.mp3
-  grep -qxF "$rel" <<<"$remote" || missing+=("$f")
-done
+while IFS= read -r rel; do
+  [ -n "$rel" ] && missing+=("cities/${rel%%/*}/music/${rel#*/}")
+done < <(for f in cities/*/music/*.mp3; do [ -e "$f" ] && echo "$f"; done \
+  | sed 's|^cities/\([^/]*\)/music/|\1/|' | sort | comm -23 - <(printf '%s\n' "$remote" | sort))
 if [ ${#missing[@]} -eq 0 ]; then echo "музыка: всё уже на сервере"; exit 0; fi
 echo "музыка: докачиваю ${#missing[@]} файлов"
 # cities/<id>/music/x.mp3 -> <id>/x.mp3 на сервере

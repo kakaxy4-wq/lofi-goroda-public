@@ -8,6 +8,7 @@
 import { rng, mixHex } from '../../engine/util.js';
 import { W, HORIZON } from '../../engine/const.js';
 import { drawCars as streetCars, drawPromenade as streetPromenade, drawFireworks } from '../../engine/street.js';
+import { rocketSecret } from '../../engine/rocket.js';
 
 const DAY = {
   far: '#8f9bab', farDark: '#7d899a', hill: '#6d7a5e', hillDark: '#5a6650', scrub: '#4c6040',
@@ -252,7 +253,7 @@ const month = (env) => env.local.getUTCMonth() + 1;
 const clearSky = (env, maxCloud) => env.weather.cloud <= maxCloud && !['rain', 'storm', 'snow', 'fog'].includes(env.weather.kind);
 const nightIdx = (env) => Math.floor((env.ms / 1000 - 9 * 3600) / 86400); // «ночь» считается от местного полудня
 
-function drawAurora(b, env, st, dayF) {
+export function drawAurora(b, env, st, dayF) { // общий: им пользуется и Анадырь
   const t = env.ms / 1000, k = (1 - dayF * 0.85) * st.p;
   // общее зеленоватое свечение неба
   const glow = b.createLinearGradient(0, 0, 0, 110);
@@ -375,6 +376,8 @@ export const SECRETS = [
     },
     draw(b, env, st, dayF) { drawFireworks(b, env.ms / 1000, 240, 36, dayF); },
   },
+  // Сумеречный пуск с «Плесецка»: редко, по расписанию от даты (engine/rocket.js)
+  rocketSecret('Плесецк', 62.9, 40.6),
 ];
 
 // События по новостям (data/events.json): fireworks — салют над городом

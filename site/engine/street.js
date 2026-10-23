@@ -107,8 +107,23 @@ export function drawSecrets(ctx, env, dayF, secrets, layer) {
   for (const s of secrets || []) {
     if (s.layer !== layer) continue;
     const st = env.forceSecret === s.id ? s.state({ ...env, forced: true }) : s.state(env);
-    if (st) s.draw(ctx, env, st, dayF);
+    if (!st) continue;
+    s.draw(ctx, env, st, dayF);
+    if (env.foundSecrets && !env.foundSecrets.has(s.id)) sparkle(ctx, st, performance.now() / 1000); // ещё не найден — тихо мерцает (реальное время: и в машине времени тоже)
   }
+}
+// Звёздочка над секретом: вспыхивает раз в несколько секунд, чтобы её можно было заметить, но не навязчиво
+function sparkle(ctx, st, t) {
+  const ph = (t * 0.45 + st.x * 0.013) % 1, a = Math.max(0, Math.sin(ph * Math.PI * 2)) ** 3;
+  if (a < 0.05) return;
+  const x = Math.round(st.x + st.w / 2), y = Math.round(st.y - 4);
+  const g = ctx.createRadialGradient(x + 0.5, y + 0.5, 0, x + 0.5, y + 0.5, 7);
+  g.addColorStop(0, `rgba(255,236,160,${0.55 * a})`); g.addColorStop(1, 'rgba(255,236,160,0)');
+  ctx.fillStyle = g; ctx.fillRect(x - 7, y - 7, 15, 15);
+  ctx.globalAlpha = a * 0.6; ctx.fillStyle = '#3a2a10'; ctx.fillRect(x - 1, y - 4, 3, 9); ctx.fillRect(x - 4, y - 1, 9, 3); // тёмный контур — видно и на светлом
+  ctx.globalAlpha = a; ctx.fillStyle = '#fffbe8'; ctx.fillRect(x, y - 3, 1, 7); ctx.fillRect(x - 3, y, 7, 1);
+  ctx.fillStyle = '#ffd860'; ctx.fillRect(x, y, 1, 1);
+  ctx.globalAlpha = 1;
 }
 export function secretAt(x, y, env, secrets) {
   for (const s of secrets || []) {

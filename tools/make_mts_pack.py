@@ -52,7 +52,9 @@ if OUT.exists():
 
 for ad_id, _, _, _, scene, video in ADS:
     im = Image.open(FRAMES / f"clip_{scene}_0120.png").convert("RGB")       # 480×270, пиксели без размытия
-    im.resize((1920, 1080), Image.NEAREST).save(OUT / "banners" / f"{ad_id}-{scene}-16x9.png", optimize=True)
+    big = im.resize((1920, 1080), Image.NEAREST)
+    big.save(OUT / "banners" / f"{ad_id}-{scene}-16x9.png", optimize=True)
+    big.save(OUT / "banners" / f"{ad_id}-{scene}-16x9.jpg", "JPEG", quality=92)  # МТС берёт JPEG
     cx = SQUARE_CENTER.get(scene, 240)                                        # главное в кадре — в центре квадрата
     sq = im.crop((cx - 135, 0, cx + 135, 270)).resize((1080, 1080), Image.NEAREST)
     sq.save(OUT / "banners" / f"{ad_id}-{scene}-1x1.png", optimize=True)

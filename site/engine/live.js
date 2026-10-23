@@ -23,7 +23,7 @@ function source() {
   } catch { return /^[a-z0-9_-]{1,32}$/.test(v) ? v : ''; }
 }
 
-export function connectLive({ city, onStats, onReact }) {
+export function connectLive({ city, onStats, onReact, onNote, onJam }) {
   let ws = null, tries = 0, alive = true;
   const last = { stats: null };
   const queue = []; // события до открытия соединения
@@ -37,6 +37,8 @@ export function connectLive({ city, onStats, onReact }) {
       let m; try { m = JSON.parse(e.data); } catch { return; }
       if (m.t === 'stats') { last.stats = m; onStats(m); }
       if (m.t === 'react') onReact(m.k);
+      if (m.t === 'jam') onJam?.(m.d); // кто-то у этого окна сыграл аккорд на гитаре
+      if (m.t === 'note' && Number.isInteger(m.k)) onNote?.(m.k);
     };
     ws.onclose = retry;
     ws.onerror = () => ws.close();
@@ -51,6 +53,9 @@ export function connectLive({ city, onStats, onReact }) {
   open();
   return {
     react: (k) => send({ t: 'react', k }),
+    jam: (d) => send({ t: 'jam', d }),
+    note: (k) => send({ t: 'note', k }),
+    water: () => send({ t: 'water' }),
     coin: (target, win) => send({ t: 'coin', target, win }),
     // анонимная статистика нажатий: только имя события, сервер считает их по дням и городам
     ev(name) {

@@ -7,6 +7,7 @@
 import { rng, mixHex } from '../../engine/util.js';
 import { W } from '../../engine/const.js';
 import { drawCars as streetCars, drawPromenade as streetPromenade, drawPerson, drawFireworks } from '../../engine/street.js';
+import { rocketSecret } from '../../engine/rocket.js';
 
 const DAY = {
   far: '#9aa2b0', farDark: '#8890a0', farRoof: '#737c8e',
@@ -392,6 +393,8 @@ export const SECRETS = [
     },
     draw(b, env, st, dayF) { drawFireworks(b, env.ms / 1000, 250, 40, dayF); },
   },
+  // Сумеречный пуск с «Плесецка»: редко, по расписанию от даты (engine/rocket.js)
+  rocketSecret('Плесецк', 62.9, 40.6),
 ];
 
 // События по новостям (data/events.json): fireworks — салют над кремлём

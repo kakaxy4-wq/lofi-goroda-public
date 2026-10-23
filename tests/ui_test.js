@@ -27,8 +27,17 @@ export async function run() {
   const t = (name, ok, info = '') => out.push([name, !!ok, ok ? '' : String(info)]);
   const errors = [];
   addEventListener('error', (e) => errors.push(e.message));
+  // новичку сначала показывается знакомство «Включить окно» — подсказки ждут его; закрыть и дать intro показаться
+  if (!localStorage.getItem('lg:introSeen')) for (let i = 0; i < 16 && !$('#onboard'); i++) await sleep(500); // карточка — через 1,5 с после загрузки
+  const onboarded = !!$('#onboard');
+  if (onboarded) {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    for (let i = 0; i < 16 && !window.__lofiHints?.state().seen.includes('intro'); i++) await sleep(500);
+  }
+  t('знакомство «Включить окно» закрывается по Esc', !onboarded || !$('#onboard'));
+  window.__lofiHints?.mute(); // подсказки по расписанию не перезаписывают тосты проверок (показанные до теста — см. блок в конце)
   document.body.classList.remove('idle');
-  const city = $('h1').textContent.replace('▼', '').trim(), isPiter = city === 'Санкт-Петербург';
+  const city = ($('h1 .city-pick') || $('h1')).textContent.replace('▼', '').trim(), isPiter = city === 'Санкт-Петербург';
   const cityId = location.pathname.split('/').filter(Boolean)[0] || 'piter';
   const LANDMARKS = { piter: [299, 60, 'Петропавловский'], kazan: [193, 104, 'Кул-Шариф'] };
   let landmark = LANDMARKS[cityId];
@@ -43,7 +52,8 @@ export async function run() {
   const dock = $('.dock').getBoundingClientRect();
   t('полка управления целиком на экране', dock.bottom <= innerHeight + 1 && dock.top > 0, JSON.stringify(dock));
   const qbs = [...document.querySelectorAll('.qb')];
-  t('все 9 быстрых кнопок видны', qbs.length === 9 && qbs.every((b) => { const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1 && r.bottom <= innerHeight + 1 && r.width > 20; }), qbs.map((b) => Math.round(b.getBoundingClientRect().right)).join(','));
+  const nofs = document.documentElement.classList.contains('tg-nofs'); // Mini App на старом клиенте: кнопки «экран» нет по замыслу
+  t('все 9 быстрых кнопок видны', qbs.length === 9 && qbs.every((b) => { if (nofs && b.id === 'fs') return true; const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1 && r.bottom <= innerHeight + 1 && r.width > 20; }), qbs.map((b) => Math.round(b.getBoundingClientRect().right)).join(','));
   t('нет горизонтальной прокрутки', document.documentElement.scrollWidth <= innerWidth + 1, document.documentElement.scrollWidth);
   const v = visibleRows();
   t('гирлянда (верх сцены) в кадре', v.top <= 2, v.top.toFixed(1));
@@ -51,9 +61,23 @@ export async function run() {
   t(`главное место («${landmark[2]}») по ширине в кадре`, v.left <= landmark[0] && v.right >= landmark[0], `${v.left.toFixed(0)}–${v.right.toFixed(0)} / x=${landmark[0]}`);
   const lampVisible = v.left <= 122 && v.right >= 122;
   t('кнопка плей не меньше 40px (палец)', $('#play').getBoundingClientRect().width >= 40);
-  await document.fonts.ready; t('шрифты Pangolin и Press Start загружены', [...document.fonts].some((f) => f.family.includes('Lofi') && f.status === 'loaded') && [...document.fonts].some((f) => f.family.includes('Retro') && f.status === 'loaded'));
+  await document.fonts.ready; t('шрифты Pangolin и Press Start загружены', [...document.fonts].some((f) => f.family.includes('Lofi') && f.status === 'loaded') && [...document.fonts].some((f) => (f.family.includes('Retro') || f.family.includes('Pixel')) && f.status === 'loaded'));
   t('название города — шрифт Caveat загружен', [...document.fonts].some((f) => f.family.includes('Title') && f.status === 'loaded'));
   { const hr = $('h1 .city-pick, h1').getBoundingClientRect(); t('название города целиком на экране', hr.left >= 0 && hr.right <= innerWidth + 1, `${hr.left.toFixed(0)}–${hr.right.toFixed(0)} / ${innerWidth}`); }
+  { // ttfs: время до первого звука — ровно одно событие на загрузку страницы, пауза и повтор не добавляют
+    const wasPlaying = audio_playing();
+    if (wasPlaying) { $('#play').click(); await sleep(150); }
+    const evs = [], origEv = window.__live.ev;
+    window.__live.ev = (name) => { evs.push(name); return origEv.call(window.__live, name); };
+    $('#play').click(); await sleep(250);
+    t('ttfs: первое включение даёт ровно одно событие ttfs:*', evs.filter((n) => n.startsWith('ttfs:')).length === 1, evs.join(','));
+    $('#play').click(); await sleep(150); // пауза
+    $('#play').click(); await sleep(150); // включили снова
+    t('ttfs: пауза и повторное включение не добавляют событие', evs.filter((n) => n.startsWith('ttfs:')).length === 1, evs.join(','));
+    window.__live.ev = origEv;
+    $('#play').click(); await sleep(150); // назад в паузу
+    if (wasPlaying) { $('#play').click(); await sleep(150); }
+  }
   { // ▶ при выключенной музыке сам возвращает звук
     const wasPlaying = audio_playing();
     if (wasPlaying) { $('#play').click(); await sleep(150); }
@@ -73,7 +97,14 @@ export async function run() {
     t('поделиться: панель с картинкой кадра', !$('#panel').hidden && $('#panel').dataset.kind === 'share' && img?.src.startsWith('data:image/png'));
     t('поделиться: картинка 1200×630', img?.naturalWidth === 1200 && img?.naturalHeight === 630, `${img?.naturalWidth}×${img?.naturalHeight}`);
     t('поделиться: ссылка Telegram с меткой from=share', tg && decodeURIComponent(tg.href).includes('from=share'), tg?.href);
+    t('открытка: в тексте «Привет из/с …»', /Привет (из|с) /.test(decodeURIComponent(tg?.href || '')), tg?.href);
+    const inp = $('#shareSign'), before = img?.src;
+    if (inp) { inp.value = 'тест-подпись'; inp.dispatchEvent(new Event('input')); await sleep(900); }
+    t('открытка: подпись меняет картинку и текст', inp && $('#sharePic').src !== before && /тест-подпись/i.test(decodeURIComponent(tg.href)));
+    if (inp) { inp.value = ''; inp.dispatchEvent(new Event('input')); await sleep(400); }
     $('#panelClose').click(); await sleep(50);
+    const send = $('#sendBtn'), so = send?.getBoundingClientRect();
+    t('кнопка «другу» у плеера видна', send && so.width > 0 && so.right <= innerWidth + 1, JSON.stringify(so));
   }
   { // выбор города: кнопка у названия открывает список всех городов, текущий отмечен, Esc закрывает
     const pick = $('.city-pick'), menu = $('.city-menu');
@@ -119,11 +150,16 @@ export async function run() {
   t('машина времени: 01:30 на часах', $('#clock').textContent === '01:30' && !$('#timeBadge').hidden, $('#clock').textContent);
   $('#badgeNow').click(); await sleep(1100);
   t('«вернуться» возвращает в сейчас', $('#timeBadge').hidden && $('#clock').textContent !== '01:30');
+  // строка «Что сейчас»
+  t('«Что сейчас»: строка не пуста', !$('#nowLine').hidden && $('#nowText').textContent.length > 8, $('#nowText').textContent);
+  $('#nowGo').click(); await sleep(1100);
+  t('«показать момент» включает машину времени', !$('#timeBadge').hidden);
+  $('#badgeNow').click(); await sleep(300);
   $('#panelClose').click();
   // эфир
   if ($('#play').getAttribute('aria-label') === 'Пауза') { $('#play').click(); await sleep(400); } // таймер сна мог включить эфир
   $('#play').click(); await sleep(2500);
-  t('плей запускает эфир и показывает трек', $('#play').getAttribute('aria-label') === 'Пауза' && $('#npTitle').textContent !== 'Радио Питер', $('#play').getAttribute('aria-label') + ' / ' + $('#npTitle').textContent);
+  t('плей запускает эфир и показывает трек', $('#play').getAttribute('aria-label') === 'Пауза' && !$('#npTitle').textContent.startsWith('Радио '), $('#play').getAttribute('aria-label') + ' / ' + $('#npTitle').textContent);
   $('#play').click(); await sleep(400);
   t('повторный плей ставит на паузу', $('#play').getAttribute('aria-label') === 'Включить эфир');
   // реакции
@@ -196,11 +232,25 @@ export async function run() {
   }
   // предметы комнаты
   const room = [['cat', 372, 230, () => $('#toast').textContent.includes('мурч')], ['tea', 312, 222, () => $('#toast').textContent.toLowerCase().includes('чай')],
-    ['chair', 40, 200, () => $('#toast').textContent.includes('Кресло')], ['books', 338, 230, () => !$('#panel').hidden && $('#panelTitle').textContent.includes('Места')]];
+    ['chair', 40, 200, () => /Кресло|полка|[Кк]орги|цоканье/.test($('#toast').textContent)], ['books', 338, 230, () => !$('#panel').hidden && $('#panelTitle').textContent.includes('Места')]];
   for (const [id, x, y, ok] of room) {
     const v = visibleRows();
     if (x < v.left || x > v.right) { t(`предмет «${id}» за краем экрана — пропущен`, true); continue; }
     tapScene(x, y); await sleep(200); t(`клик по предмету «${id}»`, ok()); closeP();
+  }
+  // гитара у окна: клик по корпусу — аккорд (струны щиплются через AudioBufferSource)
+  if (window.__lofiGuitar) {
+    const { guitarRect } = await import('/engine/guitar.js');
+    const [gx, gy, gw, gh] = guitarRect(window.__lofiGuitar.kind), x = gx + Math.round(gw * 0.4), y = gy + gh - 12;
+    const v = visibleRows();
+    if (x < v.left || x > v.right) t('гитара за краем экрана — пропущена', true);
+    else {
+      let n = 0; const start = AudioBufferSourceNode.prototype.start;
+      AudioBufferSourceNode.prototype.start = function (...a) { if (this.buffer && this.buffer.duration > 1.2 && this.buffer.duration < 2.5) n++; return start.apply(this, a); };
+      tapScene(x, y); await sleep(400);
+      AudioBufferSourceNode.prototype.start = start;
+      t('клик по гитаре играет аккорд (≥4 струны)', n >= 4, n);
+    }
   }
   if (isPiter) {
   // мини-игра: вторая не открывается, хоткеи под модалкой молчат
@@ -231,6 +281,19 @@ export async function run() {
   t('кнопка «город без звука» видна и нажимается', mc.width >= 20 && mc.right <= innerWidth && mc.bottom <= innerHeight, JSON.stringify(mc));
   $('#muteCity').click(); await sleep(150); const vc = +$('#volCity').value; $('#muteCity').click(); await sleep(150);
   t('город глушится и возвращается', vc === 0 && +$('#volCity').value > 0);
+  { // подсказки по расписанию (hints.js): до начала теста шлюз не заглушен — к моменту прогона прошло > 5 с, intro уже показан
+    const hints = window.__lofiHints;
+    t('планировщик подсказок доступен (window.__lofiHints)', !!hints);
+    if (hints) {
+      t('первая подсказка (intro) показана и запомнена', hints.state().seen.includes('intro'), JSON.stringify(hints.state()));
+      t('показанные подсказки сохранены в localStorage', JSON.parse(ls('hintsShown') || '[]').length > 0, ls('hintsShown'));
+      const last0 = hints.state().lastAt;
+      document.body.classList.add('calm'); // фокус/сон: шлюз молчит
+      await sleep(1500);
+      t('в тихом режиме (фокус/сон) подсказки не показываются', hints.state().lastAt === last0, `${last0} → ${hints.state().lastAt}`);
+      document.body.classList.remove('calm');
+    }
+  }
   t('нет ошибок JS за прогон', errors.length === 0, errors.join('; '));
   return out;
 }

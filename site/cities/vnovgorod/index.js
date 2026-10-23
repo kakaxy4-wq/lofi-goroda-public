@@ -75,7 +75,6 @@ const sounds = {
     const mo = e.local.getUTCMonth() + 1;
     if (day && !e.frozen && chance(0.5)) sfx.gull(t);
     if (mo >= 5 && mo <= 8 && h >= 18 && h <= 22 && chance(1.5)) sfx.swift(t);
-    if (chance(0.3)) sfx.clink(t);
     if (e.navigation && !e.frozen && h >= 10 && h <= 21 && chance(0.06)) sfx.horn(t);
     if (e.event?.kind === 'fireworks' && chance(10)) sfx.cannon(t);
     if (crossed(3600)) sfx.hours(t, h % 12 || 12, key);
@@ -131,6 +130,8 @@ export default {
   env,
   ticker,
   places: { HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'souvenir', rects: [[262, 194, 24, 20]] }], PLACES, PLACE_ORDER, games: {} },
+  // закрытый ларёк не подписываем его товаром — иначе подсказка висит над пустым местом
+  labelAt: (id, env) => (id.startsWith('stall_') && env && !stallKinds(env)[id.slice(6)] ? 'Ларёк закрыт' : ''),
   labels: {
     cat: 'Кот — погладить', souvenir: 'Берестяной туесок', books: 'Путеводитель по Великому Новгороду',
     stall_a: 'Касса прогулок / сбитень', stall_b: 'Пирожки', stall_c: 'Мороженое / чай', stall_d: 'Берестяные сувениры',

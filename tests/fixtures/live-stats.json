@@ -1,0 +1,23 @@
+{
+  "2026-10-08": {
+    "cities": {
+      "piter": {"open": 12, "users": 8, "btn:play": 9, "ttfs:0-5": 2, "ttfs:5-15": 1, "dur:1m": 3, "dur:5m": 1, "dur:10m": 1}
+    },
+    "from": {"mts_v1": 2},
+    "from_ev": {},
+    "from_play": {},
+    "users": 8,
+    "ret7": 1
+  },
+  "2026-10-09": {
+    "cities": {
+      "piter": {"open": 15, "users": 10, "btn:play": 11, "ttfs:0-5": 3, "ttfs:15-60": 1, "ttfs:300": 1, "dur:1m": 5, "dur:5m": 2, "dur:10m": 2, "dur:30m": 1, "share:open": 3, "share:tg": 2, "share:copy": 1},
+      "kazan": {"open": 2, "users": 1}
+    },
+    "from": {"share": 3, "mts_v1": 1},
+    "from_ev": {"share": {"btn:play": 2}},
+    "from_play": {"share": 2},
+    "users": 11,
+    "ret7": 2
+  }
+}

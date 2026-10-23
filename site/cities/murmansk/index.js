@@ -76,7 +76,6 @@ const sounds = {
     const mo = e.local.getUTCMonth() + 1;
     if ((day || (h >= 9 && h < 18)) && chance(0.6)) sfx.gull(t);
     if (mo >= 6 && mo <= 7 && h >= 8 && h <= 23 && chance(0.8)) sfx.swift(t);
-    if (chance(0.3)) sfx.clink(t);
     if (chance(h >= 7 && h < 23 ? 0.15 : 0.06)) sfx.horn(t);
     const l = e.local;
     if ((l.getUTCMonth() === 0 && l.getUTCDate() === 1 && h === 0 && m < 20) || e.event?.kind === 'fireworks') { if (chance(10)) sfx.cannon(t); }
@@ -119,6 +118,9 @@ const STALL_TOASTS = {
   moroshka: 'Морошка из тундры — янтарная северная ягода, поспевает в конце лета.',
 };
 
+// Открыт ли сейчас ларёк id.
+const stallOpen = (id, env) => !!env && stalls(env).includes(id);
+
 export default {
   config: CITY,
   skyline,
@@ -128,11 +130,11 @@ export default {
   places: { HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'jam', rects: [[426, 198, 20, 17]] }], PLACES, PLACE_ORDER, games: {} },
   labels: { jam: 'Морошковое варенье', books: 'Путеводитель по Мурманску', treska: 'Треска', teastall: 'Чай и выпечка', icecream: 'Мороженое', moroshka: 'Морошка' },
   toasts: { cat: 'Кот мурчит на подоконнике над Кольским заливом.', tea: 'Горячий чай — северной ночью без него никак.', chair: 'Кресло-качалка поскрипывает, за окном перекликаются портовые краны.' },
+  labelAt: (id, env) => (id in STALL_TOASTS && env && !stallOpen(id, env) ? 'Ларёк закрыт' : ''),
   onHotspot(id, api) {
     if (id === 'jam') { api.toast('Баночка морошкового варенья — главный сладкий сувенир с Кольского полуострова.'); return true; }
     if (id in STALL_TOASTS) {
-      const open = api.env ? stalls(api.env) : [];
-      api.toast(open.includes(id) ? STALL_TOASTS[id] : 'Ларёк сейчас закрыт — загляните днём: рыба круглый год, зимой чай с выпечкой, летом мороженое и морошка.');
+      api.toast(stallOpen(id, api.env) ? STALL_TOASTS[id] : 'Ларёк сейчас закрыт — загляните днём: рыба круглый год, зимой чай с выпечкой, летом мороженое и морошка.');
       return true;
     }
     return false;

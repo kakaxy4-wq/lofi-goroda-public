@@ -74,7 +74,6 @@ const sounds = {
     if (day && chance(0.8)) sfx.gull(t);
     if (mo >= 5 && mo <= 8 && h >= 18 && h <= 22 && chance(1.5)) sfx.swift(t);
     if (h >= 6 && h < 23 && chance(0.25)) sfx.tram(t);
-    if (chance(0.3)) sfx.clink(t);
     if (e.navigation && h >= 9 && h <= 21 && chance(0.06)) sfx.horn(t);
     if (crossed(60) && korablikRun(e) >= 0 && korablikRun(e) < 0.15) sfx.horn(t); // отход кораблика
     if (e.event?.kind === 'fireworks' && chance(10)) sfx.cannon(t);
@@ -123,6 +122,9 @@ const STALL_TOASTS = {
 };
 const SLOT = { kiosk1: ['icecream', 'tea'], fish: ['fish'], amber: ['amber'], kiosk2: ['coffee', 'marzipan'] };
 
+// Открытый сейчас вид товара в ларьке-слоте id (или undefined, если закрыт).
+const stallKind = (id, env) => { const open = env ? stalls(env) : []; return SLOT[id].find((k) => open.includes(k)); };
+
 export default {
   config: CITY,
   skyline,
@@ -132,11 +134,11 @@ export default {
   places: { HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'yantar', rects: [[270, 202, 22, 14]] }], PLACES, PLACE_ORDER, games: {} },
   labels: { cat: 'Кот — погладить', yantar: 'Кусочек янтаря', books: 'Путеводитель по Калининграду', kiosk1: 'Мороженое / чай и какао', fish: 'Копчёная рыба', amber: 'Янтарь', kiosk2: 'Кофе / марципан' },
   toasts: { cat: 'Кот мурчит на подоконнике над Преголей.', tea: 'Горячий чай — смотреть, как туман ползёт по Преголе.', chair: 'Кресло-качалка поскрипывает.' },
+  labelAt: (id, env) => (id in SLOT && env && !stallKind(id, env) ? 'Ларёк закрыт' : ''),
   onHotspot(id, api) {
     if (id === 'yantar') { api.toast('Кусочек балтийского янтаря — окаменевшей смолы древних деревьев. Главный сувенир отсюда: янтарь добывают совсем рядом, в посёлке Янтарный.'); return true; }
     if (id in SLOT) {
-      const open = api.env ? stalls(api.env) : [];
-      const kind = SLOT[id].find((k) => open.includes(k));
+      const kind = stallKind(id, api.env);
       api.toast(kind ? STALL_TOASTS[kind] : 'Ларёк сейчас закрыт — загляните днём: копчёная рыба и янтарь здесь круглый год.');
       return true;
     }

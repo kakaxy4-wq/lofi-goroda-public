@@ -21,7 +21,6 @@ export const tryButtons = [['chime', 'Куранты'], ['tram', 'Трамвай
 export function tick(env, { t, h, m, day, chance, crossed, sfx, key }) {
   if (day && !env.frozen && chance(1)) sfx.gull(t);
   if ((h >= 6 || h < 1) && chance(0.5)) sfx.tram(t);
-  if (!env.frozen && chance(0.3)) sfx.clink(t);
   if (crossed(900)) { // четверти часа по курантам Петропавловки
     const q = Math.round(m / 15) % 4;
     sfx.chime(t, q === 0 ? 4 : q, key);

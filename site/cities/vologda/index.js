@@ -44,6 +44,12 @@ function ticker(e) {
   return lines;
 }
 
+// Куранты Софийской колокольни бьют каждый час — следующий полный час
+function moments(e) {
+  const l = e.local;
+  return [{ title: 'куранты на колокольне', atMs: e.ms + (60 - l.getUTCMinutes() - l.getUTCSeconds() / 60) * 60e3 }];
+}
+
 // Названия живых вставок эфира: места города (имя, «где») и его приметы
 const GEN_TITLES = { places: [["Река Вологда", "на реке Вологде"], ["Кремлёвская площадь", "на Кремлёвской площади"], ["Заречье", "в Заречье"], ["Набережная VI Армии", "на набережной VI Армии"], ["Соборная горка", "на Соборной горке"], ["Прилуки", "в Прилуках"], ["Каменный мост", "на Каменном мосту"], ["Кремлёвский сад", "в Кремлёвском саду"]],
   things: ["деревянное кружево", "наличники", "вологодское масло", "пряник к чаю", "куранты", "снег на крышах", "печка", "тихий двор"] };
@@ -68,7 +74,6 @@ const sounds = {
     const mo = e.local.getUTCMonth() + 1;
     if (day && !e.frozen && chance(0.5)) sfx.gull(t);
     if (mo >= 5 && mo <= 8 && h >= 18 && h <= 22 && chance(1.5)) sfx.swift(t);
-    if (chance(0.3)) sfx.clink(t);
     if (e.navigation && h >= 10 && h <= 21 && chance(0.1)) sfx.horn(t);
     if (crossed(3600)) sfx.hours(t, h % 12 || 12, key);
   },
@@ -108,20 +113,24 @@ const STALL_TOASTS = {
   lace: 'Сувенирный ларёк: кружевные салфетки, воротнички и снежинки, сплетённые на коклюшках.',
 };
 
+// Открыт ли сейчас ларёк id.
+const stallOpen = (id, env) => !!env && stalls(env).includes(id);
+
 export default {
   config: CITY,
   skyline,
   sounds,
   env,
   ticker,
+  moments,
   places: { HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'doily', rects: [[424, 200, 26, 15]] }], PLACES, PLACE_ORDER, games: {} },
   labels: { doily: 'Кружевная салфетка и масло', books: 'Путеводитель по Вологде', plombir: 'Пломбир', teastall: 'Чай и пряники', lace: 'Кружево' },
   toasts: { cat: 'Кот мурчит на подоконнике над рекой Вологдой.', tea: 'Горячий чай с пряником.', chair: 'Кресло-качалка поскрипывает, как половицы деревянного дома.' },
+  labelAt: (id, env) => (id in STALL_TOASTS && env && !stallOpen(id, env) ? 'Ларёк закрыт' : ''),
   onHotspot(id, api) {
     if (id === 'doily') { api.toast('Кружевная салфетка и брусок вологодского масла — два главных сувенира отсюда.'); return true; }
     if (id in STALL_TOASTS) {
-      const open = api.env ? stalls(api.env) : [];
-      api.toast(open.includes(id) ? STALL_TOASTS[id] : 'Ларёк сейчас закрыт — летом здесь пломбир, зимой чай с пряниками, а кружево продают днём круглый год.');
+      api.toast(stallOpen(id, api.env) ? STALL_TOASTS[id] : 'Ларёк сейчас закрыт — летом здесь пломбир, зимой чай с пряниками, а кружево продают днём круглый год.');
       return true;
     }
     return false;

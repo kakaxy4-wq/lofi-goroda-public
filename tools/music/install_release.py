@@ -2,11 +2,10 @@
 плейлист -> site/cities/<city>/music/playlist.json (уже лежащие там записи, например треки Suno, сохраняются).
 
 Длительности меряет make_playlist.py на GPU-сервере (там есть ffprobe), здесь только копирование:
-    python tools/music/install_release.py --host root@<gpu-host> piter kazan ...
+    python tools/music/install_release.py --host root@89.104.67.197 piter kazan ...
 mp3 в git не попадают (.gitignore), на VPS их отдельно докачивает deploy/sync_music.sh."""
 import argparse
 import json
-import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -14,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 p = argparse.ArgumentParser()
 p.add_argument("cities", nargs="+")
-p.add_argument("--host", default=os.environ.get("GPU_HOST", ""), help="ssh-хост GPU-сервера, если плейлиста нет локально")
+p.add_argument("--host", default="root@89.104.67.197")
 p.add_argument("--remote", default="/root/music/pl/{city}/playlist.json")
 p.add_argument("--library", default=str(ROOT / "music" / "final"), help="скачанные out-final/<city>/<id>-v1.mp3")
 args = p.parse_args()

@@ -4,6 +4,7 @@
 import { rng, clamp, mixHex } from '../../engine/util.js';
 import { W, HORIZON, SILL } from '../../engine/const.js';
 import { drawCars as streetCars, drawPromenade as streetPromenade, drawPerson, drawFireworks } from '../../engine/street.js';
+import { rocketSecret } from '../../engine/rocket.js';
 
 const LAKHTA_TOP = 60;
 const lakhtaW = (y) => Math.max(1, Math.round(1 + ((y - LAKHTA_TOP) / (156 - LAKHTA_TOP)) * 8));
@@ -321,16 +322,21 @@ function drawShip(ctx, x, y, dayF, cargo) {
   }
 }
 
-// Флаг в сине-бело-голубых цветах висит на карнизе у правой шторы (без логотипа клуба)
+// В день матча «Зенита» на карниз у правой шторы перекинут вязаный шарф болельщика: сине-бело-голубые
+// полосы, вязка «косичкой», бахрома на концах (без логотипа клуба). Концы висят неровно, как бросили
+export const SCARF = { x: 414, top: 3 };
 function drawMatchFlag(ctx, t, dayF) {
-  const x0 = 410, y0 = 5, w = 26, h = 30, dim = 0.55 + dayF * 0.45;
-  ctx.fillStyle = '#6a5a40'; ctx.fillRect(x0 - 1, y0, w + 2, 2);
-  const cols = ['#1f5fd0', '#f4f8ff', '#62b6f2'].map((c) => mixHex('#101018', c, dim)), fringe = mixHex('#101018', '#e8e0c8', dim);
-  for (let x = 0; x < w; x++) {
-    const sway = Math.round(Math.sin(t * 1.6 + x * 0.25) * 1.2 * (x / w));
-    for (let band = 0; band < 3; band++) { ctx.fillStyle = cols[band]; ctx.fillRect(x0 + x, y0 + 2 + band * 10 + sway, 1, 10); }
-    if (x % 2 === 0) { ctx.fillStyle = fringe; ctx.fillRect(x0 + x, y0 + 2 + h + sway, 1, 2); }
-  }
+  const dim = 0.55 + dayF * 0.45, cols = ['#1f5fd0', '#f4f8ff', '#62b6f2'].map((c) => mixHex('#101018', c, dim));
+  const dark = cols.map((c) => mixHex('#000000', c, 0.8)), fringe = mixHex('#101018', '#e8e0c8', dim);
+  const end = (x0, len, phase) => {
+    for (let y = 0; y < len; y++) {
+      const sway = Math.round(Math.sin(t * 1.3 + phase) * 1.2 * (y / len)), band = Math.floor(y / 4) % 3;
+      for (let x = 0; x < 6; x++) { ctx.fillStyle = (x + y) % 3 === 0 ? dark[band] : cols[band]; ctx.fillRect(x0 + x + sway, SCARF.top + 3 + y, 1, 1); }
+      if (y === len - 1) for (let x = 0; x < 6; x += 2) { ctx.fillStyle = fringe; ctx.fillRect(x0 + x + sway, SCARF.top + 4 + y, 1, 3); }
+    }
+  };
+  end(SCARF.x, 34, 0); end(SCARF.x + 8, 24, 1.3);
+  for (let x = 0; x < 14; x++) { ctx.fillStyle = cols[(x >> 2) % 3]; ctx.fillRect(SCARF.x + x, SCARF.top + 1, 1, 3); } // петля через карниз
 }
 
 // ---------- подключение к движку ----------
@@ -431,6 +437,8 @@ export const SECRETS = [
       ctx.globalAlpha = 0.6; ctx.fillStyle = '#dfe8f0'; for (let i = 0; i < 12; i++) ctx.fillRect(st.x - 6, st.y + i, 1, 1); ctx.globalAlpha = 1; // леска
     },
   },
+  // Сумеречный пуск с «Плесецка»: редко, по расписанию от даты (engine/rocket.js)
+  rocketSecret('Плесецк', 62.9, 40.6),
 ];
 
 // ---------- события по новостям (данные — data/events.json) ----------

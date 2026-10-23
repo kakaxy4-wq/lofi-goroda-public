@@ -72,7 +72,6 @@ const sounds = {
     if (day && mo >= 4 && mo <= 10 && chance(0.6)) sfx.gull(t);
     if (mo >= 6 && mo <= 8 && h >= 17 && h < 22 && chance(1.2)) sfx.swift(t);
     if (h >= 6 && h < 23 && chance(0.4)) sfx.tram(t);
-    if (chance(0.3)) sfx.clink(t);
     if (e.event?.kind === 'fireworks' && chance(10)) sfx.cannon(t); // раскаты салюта
   },
 };
@@ -119,7 +118,9 @@ export default {
   sounds,
   env,
   ticker,
-  places: { HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'souvenir', rects: [[249, 198, 24, 16]] }], PLACES, PLACE_ORDER, games: {} },
+  places: { VAN: { x0: 0, x1: 168, y: 147, dir: -1, park: 118 }, HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'souvenir', rects: [[249, 198, 24, 16]] }], PLACES, PLACE_ORDER, games: {} },
+  // закрытый ларёк не подписываем его товаром — иначе подсказка висит над пустым местом
+  labelAt: (id, env) => (id.startsWith('stall_') && env && !stallKinds(env)[id.slice(6)] ? 'Ларёк закрыт' : ''),
   labels: { cat: 'Кот — погладить', souvenir: 'Нерпа и кедровая шишка', books: 'Путеводитель по Иркутску', stall_a: 'Кедровые орехи', stall_b: 'Буузы', stall_c: 'Мороженое / чай' },
   toasts: { cat: 'Кот мурчит на подоконнике над Ангарой.', tea: 'Горячий чай — смотреть, как парит Ангара.', chair: 'Кресло-качалка поскрипывает, за рекой звенит трамвай.' },
   onHotspot(id, api) {

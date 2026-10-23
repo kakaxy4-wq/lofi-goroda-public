@@ -60,10 +60,19 @@ function ticker(e) {
   if (e.zenit) {
     const m = e.zenit.match, pair = `«${m.home}» — «${m.away}»`;
     if (e.zenit.live) lines.push(`Идёт матч ${pair}. Лахта светится сине-бело-голубым.`);
-    else if (e.zenit.after) lines.push(`Сегодня играл «Зенит»: ${pair}. Флаг на окне до утра.`);
+    else if (e.zenit.after) lines.push(`Сегодня играл «Зенит»: ${pair}. Шарф на окне до утра.`);
     else lines.push(`Сегодня играет «Зенит»: ${pair}, ${m.time}${m.home === 'Зенит' ? ', дома, на Крестовском' : ''}. Флаг уже на окне.`);
   }
   return lines;
+}
+
+// Ближайшие события для строки «Что сейчас» (app.js)
+function moments(e) {
+  const out = [], b = e.bridge;
+  if (b.season && b.next) out.push({ title: b.next.kind === 'open' ? 'развод Дворцового' : 'наведение Дворцового', atMs: e.ms + b.next.inMin * 60e3 });
+  const l = e.local, hm = l.getUTCHours() * 60 + l.getUTCMinutes() + l.getUTCSeconds() / 60;
+  if (hm < 720) out.push({ title: 'полуденная пушка', atMs: e.ms + (720 - hm) * 60e3 });
+  return out;
 }
 
 export default {
@@ -73,17 +82,27 @@ export default {
   env,
   audioEvents,
   ticker,
+  moments,
   bridgeState, // «Показать разводку» проверяет навигацию
   places: { HOTSPOTS, ROOM_HOTSPOTS, PLACES, PLACE_ORDER, games: TARGETS },
-  labels: { cat: 'Кот Елисей — погладить', chizhikfig: 'Чижик-сувенир — бросить монетку', books: 'Путеводитель по Санкт-Петербургу' },
+  labels: { cat: 'Кот Елисей — погладить', chizhikfig: 'Чижик-сувенир — бросить монетку', scarf: 'Шарф болельщика — сегодня играет «Зенит»', books: 'Путеводитель по Санкт-Петербургу' },
   toasts: {
     cat: 'Елисей мурчит. Назван в честь кота с Малой Садовой.',
     tea: 'Чай с чабрецом, в подстаканнике — как в поезде.',
     chair: 'Кресло-качалка поскрипывает. Плед — из маминого шкафа.',
   },
-  onHotspot(id, api) { if (id === 'chizhikfig') { api.openGame('chizhik'); return true; } return false; },
+  hotspotOn: (id, env) => id !== 'scarf' || !!env?.zenit?.flag, // шарф висит только в день матча
+  onHotspot(id, api) {
+    if (id === 'chizhikfig') { api.openGame('chizhik'); return true; }
+    if (id === 'scarf' && api.env?.zenit) {
+      const m = api.env.zenit.match, pair = `«${m.home}» — «${m.away}»`;
+      api.toast(api.env.zenit.live ? `Идёт матч ${pair}. Шарф на карнизе — за своих.` : api.env.zenit.after ? `Сегодня играл «Зенит»: ${pair}. Шарф повисит до утра.` : `Сегодня матч ${pair} в ${m.time} по Москве — шарф уже на карнизе.`);
+      return true;
+    }
+    return false;
+  },
   placesIntro: 'Нажмите на здание в кадре или выберите здесь. Монетки — Чижику и Зайцу.',
   about: `<p>Лофи-города — живые окна в города России. Всё в кадре настоящее: время и погода Санкт-Петербурга, развод Дворцового моста по графику, куранты Петропавловки каждые 15 минут и пушка в полдень.</p>
-      <p>Радио Питер — общий эфир: все слушатели слышат одно и то же в один момент. Между треками звучат живые вставки — их сочиняет браузер, каждый раз новые.</p>`,
+      <p>Радио Санкт-Петербург — общий эфир: все слушатели слышат одно и то же в один момент. Между треками звучат живые вставки — их сочиняет браузер, каждый раз новые.</p>`,
   timeIntro: 'По умолчанию всё настоящее: время Санкт-Петербурга, погода с Open-Meteo, мосты по графику. Здесь можно заглянуть в другое время.',
 };

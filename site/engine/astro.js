@@ -4,7 +4,7 @@
 const RAD = Math.PI / 180;
 const J2000 = 946728000000; // 2000-01-01 12:00 UTC
 
-function eqToHorizontal(ra, dec, ms, lat, lon) {
+export function eqToHorizontal(ra, dec, ms, lat, lon) {
   const d = (ms - J2000) / 86400000;
   const gmst = (280.46061837 + 360.98564736629 * d) % 360;
   const H = (gmst + lon) * RAD - ra;

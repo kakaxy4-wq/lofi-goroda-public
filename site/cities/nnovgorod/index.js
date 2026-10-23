@@ -74,7 +74,6 @@ const sounds = {
     if (day && !e.frozen && chance(0.6)) sfx.gull(t);
     if (mo >= 5 && mo <= 8 && h >= 18 && h <= 22 && chance(1.5)) sfx.swift(t);
     if (h >= 6 && chance(0.2)) sfx.tram(t);
-    if (chance(0.3)) sfx.clink(t);
     if (e.navigation && !e.frozen && h >= 8 && h <= 21 && chance(0.08)) sfx.horn(t);
     if (e.event?.kind === 'fireworks' && chance(10)) sfx.cannon(t);
     if (crossed(3600)) sfx.hours(t, h % 12 || 12, key);
@@ -117,21 +116,29 @@ const STALL_TOASTS = {
   hohloma: 'Сувенирный ларёк: хохломские ложки и миски — золото, киноварь и чёрный лак. Хохлома — промысел Нижегородской земли.',
 };
 
+const STALL_IDS = ['icecream', 'corn', 'hohloma'];
+// Открытый сейчас вид товара для ларька id (или null, если закрыт).
+const stallKind = (id, env) => {
+  const open = env ? stalls(env) : [];
+  const kind = id === 'icecream' && open.includes('tea') ? 'tea' : id === 'corn' && open.includes('pryanik') ? 'pryanik' : id;
+  return open.includes(kind) ? kind : null;
+};
+
 export default {
   config: CITY,
   skyline,
   sounds,
   env,
   ticker,
-  places: { HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'spoon', rects: [[270, 190, 24, 24]] }], PLACES, PLACE_ORDER, games: {} },
+  places: { VAN: { x0: 0, x1: 234, y: 158, dir: 1, park: 180 }, HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'spoon', rects: [[270, 190, 24, 24]] }], PLACES, PLACE_ORDER, games: {} },
   labels: { spoon: 'Хохломская ложка', books: 'Путеводитель по Нижнему Новгороду', icecream: 'Мороженое / горячий чай', corn: 'Кукуруза / городецкий пряник', hohloma: 'Хохлома' },
   toasts: { cat: 'Кот мурчит на подоконнике над Волгой.', tea: 'Горячий чай — смотреть, как над Волгой плывут кабинки.', chair: 'Кресло-качалка поскрипывает.' },
+  labelAt: (id, env) => (STALL_IDS.includes(id) && env && !stallKind(id, env) ? 'Ларёк закрыт' : ''),
   onHotspot(id, api) {
     if (id === 'spoon') { api.toast('Хохломская ложка: роспись золотом по чёрному и красному. Хохлома — промысел Нижегородской области, золото получают без золота — оловом, лаком и жаром печи.'); return true; }
     if (id === 'icecream' || id === 'corn' || id === 'hohloma') {
-      const open = api.env ? stalls(api.env) : [];
-      const kind = id === 'icecream' && open.includes('tea') ? 'tea' : id === 'corn' && open.includes('pryanik') ? 'pryanik' : id;
-      api.toast(open.includes(kind) ? STALL_TOASTS[kind] : 'Ларёк сейчас закрыт — загляните днём: летом здесь мороженое и кукуруза, зимой чай с городецким пряником.');
+      const kind = stallKind(id, api.env);
+      api.toast(kind ? STALL_TOASTS[kind] : 'Ларёк сейчас закрыт — загляните днём: летом здесь мороженое и кукуруза, зимой чай с городецким пряником.');
       return true;
     }
     return false;

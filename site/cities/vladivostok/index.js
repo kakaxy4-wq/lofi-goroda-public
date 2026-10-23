@@ -49,6 +49,14 @@ function ticker(e) {
   return lines;
 }
 
+// Ближайшие события для строки «Что сейчас» (app.js)
+function moments(e) {
+  const out = [], l = e.local, hm = l.getUTCHours() * 60 + l.getUTCMinutes() + l.getUTCSeconds() / 60;
+  if (hm < 720) out.push({ title: 'полуденная пушка', atMs: e.ms + (720 - hm) * 60e3 });
+  if (isCityDaySalute(l) && hm < 1320) out.push({ title: 'салют в День города', atMs: e.ms + (1320 - hm) * 60e3 });
+  return out;
+}
+
 // Названия живых вставок эфира: места города (имя, «где») и его приметы
 const GEN_TITLES = { places: [["Золотой Рог", "на Золотом Роге"], ["Светланская", "на Светланской"], ["Эгершельд", "на Эгершельде"], ["Орлиное гнездо", "на Орлином гнезде"], ["Спортивная гавань", "в Спортивной гавани"], ["Русский остров", "на Русском острове"], ["Чуркин", "на Чуркине"], ["Токаревский маяк", "у Токаревского маяка"]],
   things: ["туман с моря", "полуденная пушка", "фуникулёр", "пян-се", "гребешок", "тигр на сопке", "сопки", "гудок парома"] };
@@ -72,7 +80,6 @@ const sounds = {
   tick(e, { t, h, m, day, chance, crossed, sfx }) {
     if (day && chance(0.8)) sfx.gull(t);
     if (h >= 5 && h < 23 && chance(0.15)) sfx.tram(t);
-    if (chance(0.3)) sfx.clink(t);
     if (chance(0.2)) sfx.horn(t);
     if (h === 12 && m === 0 && crossed(60)) sfx.cannon(t); // полуденный выстрел
     if ((isCityDaySalute(e.local) && h === 22 && m < 15) || e.event?.kind === 'fireworks') { if (chance(10)) sfx.cannon(t); }
@@ -87,7 +94,7 @@ const HOTSPOTS = [
   { id: 's56', rects: [[296, 149, 34, 13]] },
   { id: 'vokzal', rects: [[348, 128, 50, 38]] },
   { id: 'port', rects: [[398, 124, 62, 44]] },
-  { id: 'sopki', rects: [[334, 112, 124, 12]] },
+  { id: 'sopki', rects: [[334, 118, 124, 10]] }, // вершины сопок с застройкой над вокзалом и портом (выше — небо)
   { id: 'bay', rects: [[96, 168, 320, 20]] },
   // ларьки на набережной (кликабельны, когда работают)
   { id: 'stall_a', rects: [[142, 190, 22, 20]] },
@@ -124,7 +131,10 @@ export default {
   sounds,
   env,
   ticker,
-  places: { HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'souvenir', rects: [[248, 198, 28, 18]] }], PLACES, PLACE_ORDER, games: {} },
+  moments,
+  places: { VAN: { x0: 152, x1: 350, y: (x) => Math.round(132 + (x - 150) * 14 / 200) - 1, dir: 1, park: 312 }, HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'souvenir', rects: [[248, 198, 28, 18]] }], PLACES, PLACE_ORDER, games: {} },
+  // закрытый ларёк не подписываем его товаром — иначе подсказка висит над пустым местом
+  labelAt: (id, env) => (id.startsWith('stall_') && env && !stallKinds(env)[id.slice(6)] ? 'Ларёк закрыт' : ''),
   labels: { cat: 'Кот — погладить', souvenir: 'Гребешок и тигрёнок', books: 'Путеводитель по Владивостоку', stall_a: 'Гребешок на гриле', stall_b: 'Пян-се', stall_c: 'Мороженое / чай' },
   toasts: { cat: 'Кот мурчит на подоконнике над бухтой.', tea: 'Горячий чай — смотреть на Золотой мост.', chair: 'Кресло-качалка поскрипывает, внизу гудит порт.' },
   onHotspot(id, api) {

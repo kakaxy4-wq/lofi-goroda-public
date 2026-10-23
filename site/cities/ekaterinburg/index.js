@@ -76,7 +76,6 @@ const sounds = {
     if (day && !e.frozen && chance(0.5)) sfx.gull(t);
     if (mo >= 5 && mo <= 8 && h >= 18 && h <= 22 && chance(1.5)) sfx.swift(t);
     if (h >= 6 && chance(0.25)) sfx.tram(t);
-    if (chance(0.3)) sfx.clink(t);
     if (e.navigation && !e.frozen && h >= 11 && h < 21 && chance(0.05)) sfx.horn(t);
     if (e.event?.kind === 'fireworks' && chance(10)) sfx.cannon(t);
     if (crossed(3600)) sfx.hours(t, h % 12 || 12, key);
@@ -124,7 +123,9 @@ export default {
   sounds,
   env,
   ticker,
-  places: { HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'souvenir', rects: [[254, 198, 32, 16]] }], PLACES, PLACE_ORDER, games: {} },
+  places: { VAN: { x0: 200, x1: 286, y: 157, dir: 1, park: 262 }, HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'souvenir', rects: [[254, 198, 32, 16]] }], PLACES, PLACE_ORDER, games: {} },
+  // закрытый ларёк не подписываем его товаром — иначе подсказка висит над пустым местом
+  labelAt: (id, env) => (id.startsWith('stall_') && env && !stallKinds(env)[id.slice(6)] ? 'Ларёк закрыт' : ''),
   labels: { souvenir: 'Малахитовая шкатулка', books: 'Путеводитель по Екатеринбургу', pond: 'Городской пруд', stall_a: 'Мороженое / чай', stall_b: 'Шаньги', stall_c: 'Уральские самоцветы' },
   toasts: { cat: 'Кот мурчит на подоконнике над прудом.', tea: 'Горячий чай — смотреть, как зажигаются огни на Плотинке.', chair: 'Кресло-качалка поскрипывает, за прудом звенит трамвай.' },
   onHotspot(id, api) {

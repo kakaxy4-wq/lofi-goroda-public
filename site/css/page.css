@@ -22,3 +22,10 @@ a { color: var(--accent); }
 .nf { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px 16px; }
 .nf .code { font: 48px/1.2 'Retro', sans-serif; color: var(--accent); margin: 10px 0; }
 .nf p { margin: 4px 0; max-width: 28em; }
+/* 404: список городов (вставляет tools/build_pages.py) и подсказка «возможно, вы искали» (site/js/404.js) */
+.nf .nf-cities-title { margin: 26px 0 0; color: var(--muted); }
+.nf-cities { max-width: 34em; margin: 4px 0 0; line-height: 2; color: var(--muted); }
+.nf-cities a { white-space: nowrap; margin: 0 .3em; }
+.nf-cities a:first-child { margin-left: 0; }
+.nf .nf-hint { margin: 18px auto 0; padding: 10px 16px; background: var(--panel); max-width: 34em;
+  box-shadow: -3px 0 0 0 var(--edge), 3px 0 0 0 var(--edge), 0 -3px 0 0 var(--edge), 0 3px 0 0 var(--edge); }

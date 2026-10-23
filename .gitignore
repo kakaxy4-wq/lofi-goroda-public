@@ -8,3 +8,21 @@ music/ace-trial/
 music/final/
 site/cities/*/music/*.mp3
 music/pl/
+music/gpu-*/
+music/timelapse*/
+promo/
+site/promo/
+
+# релизы на стриминги: обложки и аудио не в git
+release/**/*.png
+release/**/*.wav
+
+# голосовые модели Piper — скачиваются tools/voice/render.py
+tools/voice/models/
+tools/voice/recorded/
+music/Запись голоса для радио.html
+
+# секреты (ключ z.ai и др.)
+.env
+.env.*
+tools/agent/queue.done.txt

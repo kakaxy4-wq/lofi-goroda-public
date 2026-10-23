@@ -9,16 +9,19 @@ services:
       - /opt/lofi-goroda/site:/usr/share/nginx/html:ro
       - /opt/lofi-goroda/music:/usr/share/nginx/music:ro
       - /opt/lofi-goroda/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    networks: [traefik]
+    networks:
+      traefik:
+        aliases: [lofigoroda-web]  # уникальное имя в общей сети traefik: «web»/«live» там есть и у других проектов
     labels:
       - traefik.enable=true
       - traefik.http.routers.lofigoroda.rule=Host(`lofi-goroda.ru`) || Host(`www.lofi-goroda.ru`)
       - traefik.http.routers.lofigoroda.entrypoints=web-secure
       - traefik.http.routers.lofigoroda.tls.certresolver=default
-      - traefik.http.routers.lofigoroda.middlewares=lofigoroda-www,compression@file
+      - traefik.http.routers.lofigoroda.middlewares=lofigoroda-www,lofigoroda-no-h3,compression@file
       - traefik.http.middlewares.lofigoroda-www.redirectregex.regex=^https://www\.lofi-goroda\.ru/(.*)
       - traefik.http.middlewares.lofigoroda-www.redirectregex.replacement=https://lofi-goroda.ru/$${1}
       - traefik.http.middlewares.lofigoroda-www.redirectregex.permanent=true
+      - traefik.http.middlewares.lofigoroda-no-h3.headers.customResponseHeaders.Alt-Svc=
       - traefik.http.services.lofigoroda.loadbalancer.server.port=80
   live:
     image: python:3.12-alpine
@@ -33,6 +36,9 @@ services:
       - /tmp
     working_dir: /app
     command: python -u live.py
+    # только BOT_KEY (лимит отзывов бота по contact); токена бота здесь нет — он лишь в bot.env. Файл создаётся руками один раз
+    env_file:
+      - /opt/lofi-goroda/live.env
     environment:
       - PORT=8766
       - DATA=/app/data/live-data.json
@@ -41,7 +47,9 @@ services:
       - /opt/lofi-goroda/server/live.py:/app/live.py:ro
       - /opt/lofi-goroda/data:/app/data
       - /root/kanban-board/lofi-goroda:/app/feedback
-    networks: [traefik]
+    networks:
+      traefik:
+        aliases: [lofigoroda-live]  # уникальное имя в общей сети traefik: «web»/«live» там есть и у других проектов
     labels:
       - traefik.enable=true
       - traefik.http.routers.lofigoroda-live.rule=(Host(`lofi-goroda.ru`) || Host(`www.lofi-goroda.ru`)) && PathPrefix(`/live`)
@@ -49,6 +57,26 @@ services:
       - traefik.http.routers.lofigoroda-live.tls.certresolver=default
       - traefik.http.routers.lofigoroda-live.priority=100
       - traefik.http.services.lofigoroda-live.loadbalancer.server.port=8766
+  bot:
+    # Telegram-бот @oknodnya_bot (long polling, без Traefik). Секреты — в /opt/lofi-goroda/bot.env, только на сервере.
+    # Ровно один экземпляр с этим токеном: второй даёт 409.
+    build: /opt/lofi-goroda/bot
+    init: true
+    mem_limit: 768m
+    shm_size: 256m  # Chromium падает на 64 МБ /dev/shm по умолчанию
+    restart: unless-stopped
+    env_file:
+      - /opt/lofi-goroda/bot.env
+    environment:
+      - SITE_URL=http://lofigoroda-web
+      - LIVE_URL=http://lofigoroda-live:8766
+    volumes:
+      - lofi-bot-data:/data
+      - /opt/lofi-goroda/CHANGES.md:/app/CHANGES.md:ro
+    networks: [traefik]
+    depends_on: [web, live]
 networks:
   traefik:
     external: true
+volumes:
+  lofi-bot-data:

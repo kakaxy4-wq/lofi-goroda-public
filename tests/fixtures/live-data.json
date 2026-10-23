@@ -1,0 +1,12 @@
+{
+  "day": "2026-10-12",
+  "ids": ["u1", "u2", "u3"],
+  "coins": {"chizhik": {"thrown": 1, "won": 1}},
+  "ev": {"piter": {"open": 4, "btn:play": 3, "ttfs:0-5": 1, "dur:1m": 1, "share:open": 1, "share:vk": 1}},
+  "cu": {"piter": ["u1", "u2"]},
+  "src": {"share": ["u1"]},
+  "sev": {"share": {"btn:play": 1}},
+  "splay": {"share": ["u1"]},
+  "ret7": 1,
+  "seen": {"abcd1234ef567890": "2026-10-12"}
+}

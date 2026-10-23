@@ -73,7 +73,6 @@ const sounds = {
     const mo = e.local.getUTCMonth() + 1;
     if (day && chance(0.8)) sfx.gull(t);
     if (mo >= 5 && mo <= 8 && h >= 18 && h <= 21 && chance(1.5)) sfx.swift(t);
-    if (chance(0.3)) sfx.clink(t);
     if (h >= 8 && h <= 21 && chance(0.15)) sfx.horn(t);
     if (crossed(1800)) sfx.hours(t, skl(h, m), key);
   },
@@ -126,6 +125,8 @@ export default {
   env,
   ticker,
   places: { HOTSPOTS, ROOM_HOTSPOTS: [{ id: 'shell', rects: [[248, 204, 30, 12]] }], PLACES, PLACE_ORDER, games: {} },
+  // закрытый ларёк не подписываем его товаром — иначе подсказка висит над пустым местом
+  labelAt: (id, env) => (id.startsWith('stall_') && env && !stallKinds(env)[id.slice(6)] ? 'Ларёк закрыт' : ''),
   labels: { cat: 'Кот — погладить', shell: 'Ракушка и мандарины', books: 'Путеводитель по Сочи', stall_a: 'Кукуруза / мандарины', stall_b: 'Чурчхела', stall_c: 'Мороженое / чай', stall_d: 'Морские прогулки' },
   toasts: { cat: 'Кот мурчит на подоконнике над морем.', tea: 'Краснодарский чай — из-под Сочи.', chair: 'Кресло-качалка поскрипывает в такт прибою.' },
   onHotspot(id, api) {
