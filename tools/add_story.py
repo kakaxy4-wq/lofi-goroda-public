@@ -2,7 +2,7 @@
 import json, re, sys
 cid, after = sys.argv[1], sys.argv[2]
 src = open(f'site/cities/{cid}/index.js', encoding='utf-8').read()
-pl = json.load(open(f'site/cities/{cid}/music/playlist.json', encoding='utf-8'))
+pl = json.load(open('site/' + re.search(r"playlist: '(.*?)'", src).group(1), encoding='utf-8'))  # эфир может быть общим с другим окном
 idx = [c for c in json.load(open('site/cities/index.json', encoding='utf-8')) if c['id'] == cid][0]
 cfg = lambda k: re.search(k + r": '(.*?)',", src).group(1)
 places_src = re.search(r'const PLACES = (\{.*?\n\});', src, re.S).group(1)

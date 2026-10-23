@@ -26,6 +26,7 @@ const S = {
   bam: { name: 'золотое звено БАМа', rows: ['g.....', 'gggggg', 'g.....'], pal: { g: '#e2b23e' } },
   transsib: { name: 'подстаканник', rows: ['.tttt.', '.tttt.', 'sssss.', 'ssssss', 'sssss.', 'ssss..'], pal: { t: '#a85a2a', s: '#b8bcc4' } },
   izhevsk: { name: 'тарелка пельменей', rows: ['..ww..', '.wwww.', 'wwwwww', 'pppppp', '.pppp.'], pal: { w: '#f2ead8', p: '#e8e4dc' } },
+  fontanka: { name: 'пышка с сахарной пудрой', rows: ['.www.', 'wbbbw', 'bb.bb', 'wbbbw', '.bbb.'], pal: { w: '#f8f4ec', b: '#d8a058' } },
   doroga: { name: 'минивэн «Марсохода»', rows: ['.wwwww.', 'wbbwbbw', 'wwwwwwo', '.k...k.'], pal: { w: '#f2f2ee', b: '#5a7a9a', o: '#e88a2a', k: '#1a1a20' } },
 };
 export const SOUVENIRS = S;

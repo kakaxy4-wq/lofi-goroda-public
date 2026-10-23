@@ -13,6 +13,7 @@
     'спб': 'piter', 'питер': 'piter', 'петербург': 'piter', 'ленинград': 'piter', 'петроград': 'piter',
     msk: 'moskva', moscow: 'moskva', 'мск': 'moskva', 'москва': 'moskva',
     kzn: 'kazan',
+    'chizhik': 'fontanka', 'чижик': 'fontanka', 'фонтанка': 'fontanka',
     izh: 'izhevsk', 'ижевск': 'izhevsk', 'устинов': 'izhevsk',
     vld: 'vladimir',
     yar: 'yaroslavl', yrl: 'yaroslavl',
